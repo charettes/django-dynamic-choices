@@ -1,0 +1,9 @@
+*.pyc
+*.swp
+*.lock
+*.pid
+*.DS_Store
+.project
+.pydevproject
+.settings
+*.db

@@ -1,0 +1,34 @@
+[
+  {
+    "pk": 1, 
+    "model": "puppets.master", 
+    "fields": {
+      "alignment": 1
+    }
+  }, 
+  {
+    "pk": 2, 
+    "model": "puppets.master", 
+    "fields": {
+      "alignment": 0
+    }
+  }, 
+  {
+    "pk": 1, 
+    "model": "puppets.puppet", 
+    "fields": {
+      "friends": [], 
+      "master": 1, 
+      "alignment": 1
+    }
+  }, 
+  {
+    "pk": 2, 
+    "model": "puppets.puppet", 
+    "fields": {
+      "friends": [], 
+      "master": 2, 
+      "alignment": 0
+    }
+  }
+]

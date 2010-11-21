@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib import admin
 from django.forms.models import _get_foreign_key, model_to_dict
-from django.forms.widgets import MediaDefiningClass
 from django.utils.functional import update_wrapper
 from django.contrib.admin.util import unquote
 from django.core.exceptions import ValidationError

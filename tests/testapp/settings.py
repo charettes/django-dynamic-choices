@@ -88,6 +88,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.admin',
     'django.contrib.staticfiles',
-    'dynamic_admin',
+    'dynamic_choices',
     'puppets',
 )

@@ -1,6 +1,7 @@
 from django.db import models
-from dynamic_admin.db.models import DynamicChoicesForeignKey, DynamicChoicesManyToManyField
 from django.db.models.query import EmptyQuerySet
+
+from dynamic_choices.db.models import DynamicChoicesForeignKey, DynamicChoicesManyToManyField
 
 ALIGNMENT_EVIL = 0
 ALIGNMENT_GOOD = 1

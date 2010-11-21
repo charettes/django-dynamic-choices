@@ -1,16 +1,16 @@
 import inspect
 
-from django.db.models import ForeignKey, ManyToManyField
 from django.core import exceptions
-from dynamic_admin.db.query import dynamic_queryset_factory
-from django.forms.models import model_to_dict
+from django.core.exceptions import FieldError
+from django.core.management.validation import ModelErrorCollection
+from django.db.models import ForeignKey, ManyToManyField
 from django.db.models.base import Model
 from django.db.models.fields import FieldDoesNotExist, Field
-from django.core.management.validation import ModelErrorCollection
 from django.db.models.sql.constants import LOOKUP_SEP
-from django.core.exceptions import FieldError
+from django.forms.models import model_to_dict
 
-from dynamic_admin.forms.fields import DynamicModelChoiceField,\
+from query import dynamic_queryset_factory
+from ..forms.fields import DynamicModelChoiceField,\
     DynamicModelMultipleChoiceField
 
 class DynamicChoicesField(object):

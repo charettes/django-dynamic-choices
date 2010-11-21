@@ -1,7 +1,8 @@
 from django.forms.models import ModelForm
-from dynamic_admin.forms.fields import DynamicModelChoiceField,\
-    DynamicModelMultipleChoiceField
 from django.db.models.fields.related import ManyToManyField
+
+from fields import DynamicModelChoiceField,\
+    DynamicModelMultipleChoiceField
 
 def dynamic_model_form_factory(model_form_cls):
     class cls(model_form_cls):

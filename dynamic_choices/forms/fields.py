@@ -1,5 +1,6 @@
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
-from dynamic_admin.db.query import DynamicChoicesQueryset
+
+from ..db.query import DynamicChoicesQueryset
 
 class DynamicModelChoiceField(ModelChoiceField):
     

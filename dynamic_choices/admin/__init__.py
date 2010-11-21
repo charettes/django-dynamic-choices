@@ -1,13 +1,13 @@
-from django.db import models
 from django.contrib import admin
-from django.forms.models import _get_foreign_key, model_to_dict
-from django.utils.functional import update_wrapper
 from django.contrib.admin.util import unquote
 from django.core.exceptions import ValidationError
+from django.db import models
+from django.forms.models import _get_foreign_key, model_to_dict
 from django.http import Http404, HttpResponseBadRequest, HttpResponse
 from django.template.defaultfilters import escape
 from django.utils import simplejson
 from django.utils.encoding import force_unicode
+from django.utils.functional import update_wrapper
 
 from ..forms import DynamicModelForm, dynamic_model_form_factory
 from ..forms.fields import DynamicModelChoiceField

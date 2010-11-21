@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.admin.util import unquote
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.forms.models import _get_foreign_key, model_to_dict
+from django.forms.models import _get_foreign_key, model_to_dict, ModelForm
 from django.http import Http404, HttpResponseBadRequest, HttpResponse
 from django.template.defaultfilters import escape
 from django.utils import simplejson
@@ -33,7 +33,7 @@ def dynamic_fieldset_factory(fieldset_cls, initial):
 def dynamic_inline_factory(inline_cls):
     "Make sure the inline has a dynamic form"
     form_cls = getattr(inline_cls, 'form', None)
-    if form_cls is None:
+    if form_cls is ModelForm:
         form_cls = DynamicModelForm
     elif issubclass(form_cls, DynamicModelForm):
         return inline_cls

@@ -7,3 +7,4 @@
 .pydevproject
 .settings
 *.db
+tests/testapp/static/*

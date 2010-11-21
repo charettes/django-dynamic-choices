@@ -43,6 +43,8 @@ USE_I18N = True
 # calendars according to the current locale
 USE_L10N = True
 
+STATICFILES_ROOT = 'static'
+
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
 MEDIA_ROOT = ''
@@ -51,11 +53,6 @@ MEDIA_ROOT = ''
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = ''
-
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '6%e0#t#0!#z+heh1fy#x!1ofm=hqy6e9-5xn+pr$68!(qju$s1'
@@ -90,6 +87,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.admin',
+    'django.contrib.staticfiles',
     'dynamic_admin',
     'puppets',
 )

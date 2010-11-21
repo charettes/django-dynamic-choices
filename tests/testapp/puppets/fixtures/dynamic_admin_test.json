@@ -1,0 +1,14 @@
+[
+  {
+    "pk": 1, 
+    "model": "auth.user", 
+    "fields": {
+      "username": "superuser", 
+      "is_active": true, 
+      "is_superuser": true, 
+      "is_staff": true, 
+      "password": "sha1$8c78a$1e7c5a48d821bcb237a6d11c8487fff977e921ee", 
+      "email": "su@do"
+    }
+  }
+]

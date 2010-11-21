@@ -46,7 +46,7 @@ def dynamic_inline_factory(inline_cls):
     cls.__name__ = "Dynamic%s" % inline_cls
     return cls
 
-class DynamicAdminBase(MediaDefiningClass):
+class DynamicAdminBase(admin.ModelAdmin.__metaclass__):
     "Metaclass that ensure form and inlines are dynamic"
     def __new__(cls, name, bases, attrs):
         # If there's already a form defined we make sure to subclass it

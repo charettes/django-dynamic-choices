@@ -2,8 +2,16 @@ from django.db import models
 from django.contrib import admin
 from django.forms.models import _get_foreign_key, model_to_dict
 from django.forms.widgets import MediaDefiningClass
+from django.utils.functional import update_wrapper
+from django.contrib.admin.util import unquote
+from django.core.exceptions import ValidationError
+from django.http import Http404, HttpResponseBadRequest, HttpResponse
+from django.template.defaultfilters import escape
+from django.utils import simplejson
+from django.utils.encoding import force_unicode
 
 from ..forms import DynamicModelForm, dynamic_model_form_factory
+from ..forms.fields import DynamicModelChoiceField
 
 def dynamic_fieldset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
@@ -57,6 +65,92 @@ class DynamicAdminBase(MediaDefiningClass):
 class DynamicAdmin(admin.ModelAdmin):
     
     __metaclass__ = DynamicAdminBase
+    
+    def get_urls(self):
+        # Inspired by
+        # https://github.com/django-extensions/django-extensions/blob/master/django_extensions/admin/__init__.py
+        from django.conf.urls.defaults import patterns, url
+
+        def wrap(view):
+            def wrapper(*args, **kwargs):
+                return self.admin_site.admin_view(view)(*args, **kwargs)
+            return update_wrapper(wrapper, view)
+
+        info = self.model._meta.app_label, self.model._meta.module_name
+
+        urlpatterns = patterns('',
+            url(r'choices/(?:(?P<object_id>\w+)/)?(inline/(?P<inline_prefix>[\w_]+)-(?P<inline_index>\d+)/)?$',
+                wrap(self.dynamic_choices),
+                name='%s_%s_dynamic_admin' % info),
+        ) + super(DynamicAdmin, self).get_urls()
+
+        return urlpatterns
+    
+    def dynamic_choices(self, request, object_id='', inline_prefix=None, inline_index=None):
+
+        def get_dynamic_choices_from_form(form):
+            fields = {}
+            for name, field in form.fields.iteritems():
+                if isinstance(field, DynamicModelChoiceField):
+                    fields[name] = list(field.widget.choices)
+            return fields
+        
+        opts = self.model._meta
+        obj = self.get_object(request, object_id)
+        # Make sure the specified object exists
+        if object_id is not None and obj is None:
+            raise Http404(_('%(name)s object with primary key %(key)r does not exist.') % {
+                          'name': force_unicode(opts.verbose_name), 'key': escape(object_id)})
+        
+        inlines = {}
+        for formset in self.get_formsets(request, obj):
+            inline_forms = []
+            prefix = formset.get_default_prefix()
+            try:
+                forms = formset(request.GET, instance=obj).forms
+            except ValidationError:
+                return HttpResponseBadRequest("Missing %s ManagementForm data" % prefix)
+            for form in forms:
+                inline_forms.append(get_dynamic_choices_from_form(form))
+            
+            inlines[prefix] = inline_forms
+        
+        if inline_prefix is not None:
+            found = False
+            for formset in self.get_formsets(request, obj):
+                prefix = formset.get_default_prefix()
+                if inline_prefix == formset.get_default_prefix():
+                    found = True
+                    try:
+                        forms = formset(request.GET, instance=obj).forms
+                        try:
+                            form = forms[int(inline_index)]
+                            data = get_dynamic_choices_from_form(form)
+                        except (IndexError, ValueError):
+                            raise Http404("%s inline of index %s doesn't exist" % (inline_prefix, inline_index))
+                    except ValidationError:
+                        return HttpResponseBadRequest("Missing %s ManagementForm data" % prefix)
+            if not found:
+                raise Http404('Inline with prefix %s does not exist' % inline_prefix)
+        else:
+            form = self.get_form(request)(request.GET, instance=obj)
+            fields = get_dynamic_choices_from_form(form)
+            
+            inlines = {}
+            for formset in self.get_formsets(request, obj):
+                inline_forms = []
+                prefix = formset.get_default_prefix()
+                try:
+                    forms = formset(request.GET, instance=obj).forms
+                except ValidationError:
+                    return HttpResponseBadRequest("Missing %s ManagementForm data" % prefix)
+                for form in forms:
+                    inline_forms.append(get_dynamic_choices_from_form(form))
+                
+                inlines[prefix] = inline_forms
+            
+            data = {'fields': fields, 'inlines': inlines}
+        return HttpResponse(simplejson.dumps(data), mimetype='application/json')
     
     # Make sure to pass request data to fieldsets
     # so they can use it to define choices

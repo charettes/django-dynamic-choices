@@ -11,7 +11,7 @@ try:
     import dynamic_admin #@UnusedImport
 except ImportError:
     import sys, os
-    sys.path.append('%s/../..' % os.getcwd())
+    sys.path.append(os.path.abspath('%s/../..' % os.getcwd()))
 
 if __name__ == "__main__":
     execute_manager(settings)

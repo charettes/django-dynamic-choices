@@ -1,5 +1,7 @@
 # Django settings for django_dynamic_admin project.
 
+import django
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -43,7 +45,9 @@ USE_I18N = True
 # calendars according to the current locale
 USE_L10N = True
 
-STATICFILES_ROOT = 'static'
+STATIC_ROOT = 'static'
+
+STATIC_URL = '/static/'
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
@@ -80,14 +84,18 @@ TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 )
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.admin',
-    'django.contrib.staticfiles',
     'dynamic_choices',
     'puppets',
-)
+]
+
+# Only install static files if django >= 1.3
+if django.VERSION[0] >= 1 and django.VERSION[1] >= 3:
+    INSTALLED_APPS.append('django.contrib.staticfiles')
+INSTALLED_APPS = tuple(INSTALLED_APPS)

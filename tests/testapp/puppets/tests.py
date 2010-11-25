@@ -1,3 +1,4 @@
+import django
 from django.core.exceptions import ValidationError
 from django.db.models.query import EmptyQuerySet
 from django.test import TestCase
@@ -29,12 +30,21 @@ class DynamicAdminTest(TestCase):
     def setUp(self):
         self.client = Client()
         self.client.login(username='superuser', password='sudo')
-    
+        
     def assertChoices(self, queryset, field, msg=None):
         self.assertEqual(list(queryset), list(field.widget.choices.queryset), msg)
             
     def assertEmptyChoices(self, field, msg=None):
         return self.assertChoices(EmptyQuerySet(), field, msg=msg)
+    
+    # Django <= 1.2 doesn't have assertIsIntance
+    if django.VERSION[0] == 1 and django.VERSION[1] < 3:
+        def assertIsInstance(self, obj, cls, msg=None):
+            """Same as self.assertTrue(isinstance(obj, cls)), with a nicer
+            default message."""
+            if not isinstance(obj, cls):
+                standardMsg = '%s is not an instance of %r' % (repr(obj), cls)
+                self.fail(self._formatMessage(msg, standardMsg))
     
     def test_GET_add(self):
         response = self.client.get('/admin/puppets/puppet/add/', follow=True)

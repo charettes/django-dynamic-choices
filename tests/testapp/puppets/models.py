@@ -30,7 +30,7 @@ class Puppet(models.Model):
     friends = DynamicChoicesManyToManyField('self', choices='choices_for_friends', blank=True, null=True)
     enemies = DynamicChoicesManyToManyField('self', through='Enemy', symmetrical=False, blank=True, null=True)
     
-    def choices_for_friends(self, queryset, id=None, alignment=None, master__alignment=None):
+    def choices_for_friends(self, queryset, id=None, alignment=None):
         """
             Make sure our friends share our alignment
         """
@@ -46,7 +46,7 @@ class Enemy(models.Model):
     because_of = DynamicChoicesForeignKey(Master, choices='achoices_for_because_of', related_name='becauses_of')
     since = models.DateField()
     
-    def achoices_for_because_of(self, queryset, id=None, enemy__alignment=None):
+    def achoices_for_because_of(self, queryset, enemy__alignment=None):
         return queryset.filter(alignment=enemy__alignment)
     
     def choices_for_enemy(self, queryset, puppet__alignment=None):

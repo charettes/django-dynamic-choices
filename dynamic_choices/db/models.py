@@ -24,6 +24,7 @@ class DynamicChoicesField(object):
         else:
             self._choices_callback = None
         self._validated_definition = False
+        self._choices_relationships = None
     
     def _has_choices_callback(self):
         return callable(self._choices_callback)
@@ -98,8 +99,10 @@ class DynamicChoicesField(object):
             self._choices_callback_field_descriptors = {}
             spec = inspect.getargspec(self._choices_callback)
             
+            self._choices_relationships = spec.args[-len(spec.defaults):]
+            
             # We make sure field descriptors are valid
-            for descriptor in spec.args[-len(spec.defaults):]:
+            for descriptor in self._choices_relationships:
                 lookups = descriptor.split(LOOKUP_SEP)
                 meta = self.related.model._meta
                 depth = len(lookups)
@@ -127,6 +130,10 @@ class DynamicChoicesField(object):
                               LOOKUP_SEP.join(descriptor), ', '.join(choice_descriptors)))
                 
                 self._choices_callback_field_descriptors[descriptor] = fields
+    
+    def _get_choices_relationships(self):
+        return self._choices_relationships
+    choices_relationships = property(_get_choices_relationships)
     
     def contribute_to_class(self, cls, name):
         super(DynamicChoicesField, self).contribute_to_class(cls, name)

@@ -1,5 +1,6 @@
 from django.forms.models import ModelForm
 from django.db.models.fields.related import ManyToManyField
+from django.db.models.sql.constants import LOOKUP_SEP
 
 from fields import DynamicModelChoiceField,\
     DynamicModelMultipleChoiceField
@@ -22,8 +23,24 @@ def dynamic_model_form_factory(model_form_cls):
             for field in self.fields.itervalues():
                 if isinstance(field, DynamicModelChoiceField):
                     field.set_choice_data(self.instance, data)
+                    
+        def get_dynamic_relationships(self):
+            rels = {}
+            opts = self.instance._meta
+            for name, field in self.fields.iteritems():
+                #TODO: check for excludes?
+                if isinstance(field, DynamicModelChoiceField):
+                    for choice in opts.get_field(name).choices_relationships:
+                        if not (choice in rels):
+                            rels[choice] = set()
+                        rels[choice].add(name)
+            return rels
+                    
     cls.__name__ = "Dynamic%s" % model_form_cls.__name__
     return cls
 
 DynamicModelForm = dynamic_model_form_factory(ModelForm)
+
+def model_form_binding_resolver(form):
+    pass
                 

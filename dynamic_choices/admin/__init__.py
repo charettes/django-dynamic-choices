@@ -209,9 +209,13 @@ class DynamicAdmin(admin.ModelAdmin):
         model = self.model
         opts = model._meta
         data = getattr(request, request.method).items()
+        # If an object is provided we collect data
+        if obj is not None:
+            initial.update(model_to_dict(obj))
         # Make sure to collect parent model data
         # and provide it to fieldsets in the form of
-        # parent__field
+        # parent__field from request if its provided.
+        # This data should be more "up-to-date".
         for k, v in data:
             if v:
                 try:
@@ -222,9 +226,6 @@ class DynamicAdmin(admin.ModelAdmin):
                     initial[k] = v.split(",")
                 else:
                     initial[k] = v
-        # If an object is provided it has data priority
-        if obj is not None:
-            initial.update(model_to_dict(obj))
         for formset, inline in zip(super(DynamicAdmin, self).get_formsets(request, obj), self.inline_instances):
             fk = _get_foreign_key(self.model, inline.model, fk_name=inline.fk_name).name
             fk_initial = dict(('%s__%s' % (fk, k),v) for k, v in initial.iteritems())

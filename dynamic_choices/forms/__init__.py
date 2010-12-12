@@ -16,7 +16,7 @@ def dynamic_model_form_factory(model_form_cls):
             # Update data if it's avaible
             for field in self.fields.iterkeys():
                 raw_value = self._raw_value(field)
-                if raw_value:
+                if raw_value is not None:
                     data[field] = raw_value
     
             # Bind instances to dynamic fields

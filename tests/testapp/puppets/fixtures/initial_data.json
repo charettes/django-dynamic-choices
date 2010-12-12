@@ -30,5 +30,15 @@
       "master": 2, 
       "alignment": 0
     }
+  },
+  {
+    "pk": 1, 
+    "model": "puppets.enemy", 
+    "fields": {
+      "enemy": 2, 
+      "since": "2010-12-12", 
+      "puppet": 1, 
+      "because_of": 2
+    }
   }
 ]

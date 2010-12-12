@@ -9,6 +9,7 @@ from dynamic_choices.forms.fields import DynamicModelMultipleChoiceField,\
     DynamicModelChoiceField
 
 from models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
+from django.utils import simplejson
 
 class DynamicForeignKeyTest(TestCase):
     
@@ -22,8 +23,8 @@ class DynamicForeignKeyTest(TestCase):
     def test_invalid_value(self):
         puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_EVIL)
         self.failUnlessRaises(ValidationError, puppet.full_clean)
-        
-class DynamicAdminTest(TestCase):
+
+class AdminTest(TestCase):
     
     fixtures = ['dynamic_admin_test']
     
@@ -31,6 +32,8 @@ class DynamicAdminTest(TestCase):
         self.client = Client()
         self.client.login(username='superuser', password='sudo')
         
+class DynamicAdminFormTest(AdminTest):
+      
     def assertChoices(self, queryset, field, msg=None):
         self.assertEqual(list(queryset), list(field.widget.choices.queryset), msg)
             
@@ -135,4 +138,18 @@ class DynamicAdminTest(TestCase):
                                 'Enemy is only specified for the first inline, second one because_of should be empty')
         
     #TODO: Add test_(GET & POST)_edit testcases
+    
+class AdminChoicesTest(AdminTest):
+    
+    def test_empty_string_value_overrides_default(self):
+        "Make sure specified empty string overrides instance field"
+        response = self.client.get('/admin/puppets/puppet/1/choices/', {
+                                                                        'DYNAMIC_CHOICES_FIELDS': 'enemy_set-0-because_of',
+                                                                        'enemy_set-0-id': 1,
+                                                                        'enemy_set-0-enemy': '',
+                                                                        'enemy_set-TOTAL_FORMS': 3,
+                                                                        'enemy_set-INITIAL_FORMS': 1
+                                                                       })
+        json = simplejson.loads(response.content)
+        self.assertEqual(json['enemy_set-0-because_of']['value'], [['', '---------']])
         

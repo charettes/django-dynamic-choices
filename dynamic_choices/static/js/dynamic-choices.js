@@ -1,5 +1,15 @@
 (function($){
 
+  var error = (function(){
+    if ('console' in window && $.isFunction(console.error))
+      return function(e) { // We must wrap the function see 
+        console.error(e);
+      };
+    else return function(e) {
+      throw new Error(e);
+    };
+  })();
+
   function getFieldNames(fields) {
     return fields.map(function(index, field){
       return field.name;
@@ -20,7 +30,7 @@
             var data = json[field.name];
             if (data.widget in handlers) {
               handlers[data.widget](field, data.value);
-            } else throw new Error('Missing handler for "' + data.widget + '" widget.');
+            } else error('Missing handler for "' + data.widget + '" widget.');
           }
           $(field).removeClass('loading');
         });
@@ -69,7 +79,7 @@
         index: match[2],
         name: match[3]
       };
-    } else throw new Error('Can\'t resolve field "' + field + '"\s of specified fieldset "' + fieldset + '".');
+    } else error('Can\'t resolve field "' + field + '"\s of specified fieldset "' + fieldset + '".');
   };
   
   function defaultFieldSelectorBuilder(fieldset, field, index) {

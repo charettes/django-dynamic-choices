@@ -12,6 +12,8 @@ class EnemyInline(admin.TabularInline):
 class PuppetAdmin(DynamicAdmin):
     
     inlines = (EnemyInline,)
+    
+    filter_horizontal = ('friends',)
 
 class MasterAdmin(DynamicAdmin):
     pass

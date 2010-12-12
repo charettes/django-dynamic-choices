@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models.query import EmptyQuerySet
+from django.db.models.query_utils import Q
 
 from dynamic_choices.db.models import DynamicChoicesForeignKey, DynamicChoicesManyToManyField
 
@@ -32,9 +33,9 @@ class Puppet(models.Model):
     
     def choices_for_friends(self, queryset, id=None, alignment=None):
         """
-            Make sure our friends share our alignment
+            Make sure our friends share our alignment or are neutral
         """
-        return same_alignment(queryset, alignment=alignment).exclude(id=id)
+        return queryset.filter(Q(alignment=alignment) | Q(alignment=ALIGNMENT_NEUTRAL)).exclude(id=id)
     
     def __unicode__(self):
         return u"%s puppet (%d)" % (self.get_alignment_display(), self.id)

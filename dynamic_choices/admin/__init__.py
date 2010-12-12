@@ -3,8 +3,10 @@ from django.contrib.admin.util import unquote
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.sql.constants import LOOKUP_SEP
+from django.forms.formsets import BaseFormSet
 from django.forms.models import _get_foreign_key, model_to_dict, ModelForm,\
     modelform_factory
+from django.forms.widgets import Select, SelectMultiple
 from django.http import Http404, HttpResponseBadRequest, HttpResponse
 from django.template.defaultfilters import escape
 from django.utils import simplejson
@@ -13,7 +15,6 @@ from django.utils.functional import update_wrapper
 
 from ..forms import DynamicModelForm, dynamic_model_form_factory
 from ..forms.fields import DynamicModelChoiceField
-from django.forms.formsets import BaseFormSet
 
 def dynamic_formset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
@@ -102,7 +103,7 @@ class DynamicAdmin(admin.ModelAdmin):
     
     def dynamic_choices_binder(self, request):
         
-        id = lambda field: '#id_%s' % field
+        id = lambda field: "[name='%s']" % field
         inline_field_selector = lambda fieldset, field: "[name^='%s-'][name$='-%s']" % (fieldset, field)
         
         fields = {}
@@ -161,9 +162,14 @@ class DynamicAdmin(admin.ModelAdmin):
                 prefix = '%s'
             for name, field in form.fields.iteritems():
                 if isinstance(field, DynamicModelChoiceField):
-                    #TODO: Handle widget
+                    widget_cls = field.widget.widget.__class__
+                    if widget_cls in (Select, SelectMultiple):
+                        widget = 'default'
+                    else:
+                        widget = "%s.%s" % (widget_cls.__module__,
+                                            widget_cls.__name__)
                     fields[prefix % name] = {
-                                             'widget': 'default',
+                                             'widget': widget,
                                              'value': list(field.widget.choices)
                                              }
             return fields

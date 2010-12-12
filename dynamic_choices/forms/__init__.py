@@ -17,8 +17,11 @@ def dynamic_model_form_factory(model_form_cls):
             for field in self.fields.iterkeys():
                 raw_value = self._raw_value(field)
                 if raw_value is not None:
-                    data[field] = raw_value
-    
+                    if raw_value:
+                        data[field] = raw_value
+                    elif field in data:
+                        del data[field]
+                        
             # Bind instances to dynamic fields
             for field in self.fields.itervalues():
                 if isinstance(field, DynamicModelChoiceField):

@@ -141,6 +141,16 @@ class DynamicAdminFormTest(AdminTest):
     
 class AdminChoicesTest(AdminTest):
     
+    def test_fk_as_empty_string(self):
+        "Make sure fk specified as empty string are parsed correctly"
+        response = self.client.get('/admin/puppets/puppet/1/choices/', {
+                                                                        'alignment': '',
+                                                                        'enemy_set-TOTAL_FORMS': 3,
+                                                                        'enemy_set-INITIAL_FORMS': 0
+                                                                       })
+        
+        self.assertEquals(200, response.status_code, 'Empty string fk shouldn\'t be cast as int')
+    
     def test_empty_string_value_overrides_default(self):
         "Make sure specified empty string overrides instance field"
         response = self.client.get('/admin/puppets/puppet/1/choices/', {

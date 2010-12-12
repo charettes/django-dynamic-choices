@@ -182,6 +182,7 @@ class DynamicChoicesField(object):
                 'form_class': self.form_class,
                 'queryset': dynamic_queryset_factory(qs, self)
             }
+            defaults.update(kwargs)
         else:
             defaults = kwargs
             

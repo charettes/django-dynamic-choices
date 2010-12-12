@@ -94,15 +94,16 @@ class DynamicAdmin(admin.ModelAdmin):
             url(r'choices-binder.js$',
                 wrap(self.dynamic_choices_binder),
                 name='%s_%s_dynamic_admin_binder' % info),
-            url(r'choices/(?:(?P<object_id>\w+)/)?$',
+            url(r'(?:add|(?P<object_id>\w+))/choices/$',
                 wrap(self.dynamic_choices),
                 name="%s_%s_dynamic_admin" % info),
         ) + super(DynamicAdmin, self).get_urls()
 
         return urlpatterns
     
+    #TODO: Directly embed binder in the code instead of loading it via HTTP
     def dynamic_choices_binder(self, request):
-        
+
         id = lambda field: "[name='%s']" % field
         inline_field_selector = lambda fieldset, field: "[name^='%s-'][name$='-%s']" % (fieldset, field)
         
@@ -112,8 +113,8 @@ class DynamicAdmin(admin.ModelAdmin):
                 to_fields[to_field] = set()
             to_fields[to_field].update(bind_fields)
         
+        url = "%schoices/" % request.META.get('HTTP_REFERER')
         app_name, model_name = self.model._meta.app_label, self.model._meta.module_name
-        url = '/admin/%s/%s/choices/' % (app_name, model_name)
         
         form = modelform_factory(self.model, form=self.form)()
         rels = form.get_dynamic_relationships()

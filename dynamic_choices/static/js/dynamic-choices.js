@@ -87,7 +87,7 @@
   };
   
   function curryBuilder(fieldset, index, builder) {
-    return function(index, field){
+    return function(i, field){
       return builder(fieldset, field, index);
     };
   };

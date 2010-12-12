@@ -94,7 +94,7 @@ class DynamicAdmin(admin.ModelAdmin):
             url(r'choices-binder.js$',
                 wrap(self.dynamic_choices_binder),
                 name='%s_%s_dynamic_admin_binder' % info),
-            url(r'choices/(?:(?P<object_id>\w+)/)?(inline/(?P<inline_prefix>[\w_]+)-(?P<inline_index>\d+)/)?$',
+            url(r'choices/(?:(?P<object_id>\w+)/)?$',
                 wrap(self.dynamic_choices),
                 name="%s_%s_dynamic_admin" % info),
         ) + super(DynamicAdmin, self).get_urls()
@@ -152,7 +152,7 @@ class DynamicAdmin(admin.ModelAdmin):
                                                                     simplejson.dumps(fields),
                                                                     simplejson.dumps(inlines)), mimetype='text/javascript')
     
-    def dynamic_choices(self, request, object_id='', inline_prefix=None, inline_index=None):
+    def dynamic_choices(self, request, object_id=None):
 
         def get_dynamic_choices_from_form(form):
             fields = {}

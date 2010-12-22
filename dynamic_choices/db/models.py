@@ -27,6 +27,9 @@ class DynamicChoicesField(object):
         self._choices_relationships = None
     
     def _has_choices_callback(self):
+        if not self._validated_definition:
+            self.validate_definition()
+        
         return callable(self._choices_callback)
     has_choices_callback = property(_has_choices_callback)
     
@@ -89,12 +92,29 @@ class DynamicChoicesField(object):
     # Since there's no way to provide errors to that method it's called on first
     # _invoke_choices_callback call.
     def validate_definition(self):
-        # Mark this method as called
+        # Mark self as validated
         self._validated_definition = True
         
-        if self.has_choices_callback:
-            def error(message):
+        def error(message):
                 raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
+        
+        if self._choices_callback:
+            # The choices we're defined by a string
+            # therefore it should be a cls method
+            if isinstance(self._choices_callback, basestring):
+                callback = getattr(self.related.model, self._choices_callback, None)
+                if not callable(callback):
+                    error('Cannot find method specified by choices.')
+                args_length = 2 # Since the callback is a method we must emulate the 'self'
+                self._choices_callback = callback
+            else:
+                args_length = 1 # It's a callable, it needs no reference to model instance
+            
+            spec = inspect.getargspec(self._choices_callback)
+            
+            # Make sure the callback has the correct number or arg
+            if (len(spec.args) - len(spec.defaults)) != args_length:
+                error('Specified choices callback must accept only a single arg')
             
             self._choices_callback_field_descriptors = {}
             spec = inspect.getargspec(self._choices_callback)
@@ -132,37 +152,10 @@ class DynamicChoicesField(object):
                 self._choices_callback_field_descriptors[descriptor] = fields
     
     def _get_choices_relationships(self):
+        if not self._validated_definition:
+            self.validate_definition()
         return self._choices_relationships
     choices_relationships = property(_get_choices_relationships)
-    
-    def contribute_to_class(self, cls, name):
-        super(DynamicChoicesField, self).contribute_to_class(cls, name)
-        
-        if self._choices_callback:
-            # Since there's no way of providing custom  model field validation
-            # we attempt to mimic manage.py validate behavior
-            error_collection = ModelErrorCollection()
-            def error(message):
-                error_collection.add(cls._meta, '"%s": %s' % (name, message))
-            
-            # The choices we're defined by a string
-            # therefore it should be a cls method
-            if isinstance(self._choices_callback, basestring):
-                callback = getattr(cls, self._choices_callback, None)
-                if not callable(callback):
-                    error('Cannot find "%s.%s" method specified by choices.' % (cls.__name__, self._choices_callback))
-                    return
-                args_length = 2 # Since the callback is a method we must emulate the 'self'
-                self._choices_callback = callback
-            else:
-                args_length = 1 # It's a callable, it needs no reference to model instance
-            
-            spec = inspect.getargspec(self._choices_callback)
-            
-            # Make sure the callback has the correct number or arg
-            if (len(spec.args) - len(spec.defaults)) != args_length:
-                error('Specified choices callback must accept only a single arg')
-                return
 
     def __super(self):
         # Dirty hack to allow both DynamicChoicesForeignKey and DynamicChoicesManyToManyField

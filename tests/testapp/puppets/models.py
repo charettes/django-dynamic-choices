@@ -44,10 +44,10 @@ class Enemy(models.Model):
     
     puppet = DynamicChoicesForeignKey(Puppet)
     enemy = DynamicChoicesForeignKey(Puppet, choices='choices_for_enemy', related_name='bob')
-    because_of = DynamicChoicesForeignKey(Master, choices='achoices_for_because_of', related_name='becauses_of')
+    because_of = DynamicChoicesForeignKey(Master, choices='choices_for_because_of', related_name='becauses_of')
     since = models.DateField()
     
-    def achoices_for_because_of(self, queryset, enemy__alignment=None):
+    def choices_for_because_of(self, queryset, enemy__alignment=None):
         return queryset.filter(alignment=enemy__alignment)
     
     def choices_for_enemy(self, queryset, puppet__alignment=None):

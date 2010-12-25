@@ -2,7 +2,6 @@ import inspect
 
 from django.core import exceptions
 from django.core.exceptions import FieldError
-from django.core.management.validation import ModelErrorCollection
 from django.db.models import ForeignKey, ManyToManyField
 from django.db.models.base import Model
 from django.db.models.fields import FieldDoesNotExist, Field

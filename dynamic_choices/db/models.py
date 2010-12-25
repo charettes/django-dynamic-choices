@@ -83,7 +83,11 @@ class DynamicChoicesField(object):
                 if isinstance(value, list) and \
                     not isinstance(field, ManyToManyField):
                     value = value[0] # Make sure we've got a scalar if its not a m2m
-                values[descriptor] = value
+                # Attempt to cast value, if failed we don't assign since it's invalid
+                try:
+                    values[descriptor] = field.to_python(value)
+                except:
+                    pass
         
         return self._choices_callback(*args, **values)
     

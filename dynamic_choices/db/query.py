@@ -1,4 +1,4 @@
-from django.db.models.query import QuerySet
+from django.db.models.query import QuerySet, EmptyQuerySet
 
 class DynamicChoicesQueryset(QuerySet):
         
@@ -11,3 +11,13 @@ def dynamic_queryset_factory(queryset, field):
     clone._field = field
     
     return clone
+
+def unionize_querysets(querysets):
+    """
+        Combine querysets in a way that results
+        from every queryset in joined together
+    """
+    result = EmptyQuerySet()
+    for q in querysets:
+        result = result.__or__(q)
+    return result

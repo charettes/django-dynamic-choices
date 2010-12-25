@@ -8,7 +8,7 @@ from django.db.models.fields import FieldDoesNotExist, Field
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.forms.models import model_to_dict
 
-from query import dynamic_queryset_factory
+from query import dynamic_queryset_factory, unionize_querysets
 from ..forms.fields import DynamicModelChoiceField,\
     DynamicModelMultipleChoiceField
 
@@ -207,7 +207,15 @@ class DynamicChoicesForeignKey(DynamicChoicesField, ForeignKey):
             
             qs = self.rel.to._default_manager.filter(**{self.rel.field_name:value})
             qs = qs.complex_filter(self.rel.limit_choices_to)
-            qs = self._invoke_choices_callback(model_instance, qs, data)
+            
+            dcqs = self._invoke_choices_callback(model_instance, qs, data)
+            # If a tuple is provided we must build
+            # a new Queryset by combining group's ones
+            if isinstance(dcqs, tuple):
+                qs = qs and unionize_querysets(q[1] for q in dcqs)
+            else:
+                qs = dcqs
+            
             if not qs.exists():
                 raise exceptions.ValidationError(self.error_messages['invalid'] % {
                     'model': self.rel.to._meta.verbose_name, 'pk': value})

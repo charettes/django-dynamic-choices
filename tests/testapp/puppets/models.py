@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models.query import EmptyQuerySet
-from django.db.models.query_utils import Q
+from django.utils.encoding import force_unicode
 
 from dynamic_choices.db.models import DynamicChoicesForeignKey, DynamicChoicesManyToManyField
 
@@ -16,6 +16,10 @@ ALIGNMENTS = (
 
 def same_alignment(queryset, alignment=None):
     return queryset.filter(alignment=alignment)
+
+def alignment_display(alignment):
+    field = Puppet._meta.get_field('alignment')
+    return force_unicode(dict(field.flatchoices).get(int(alignment), alignment), strings_only=True)
 
 class Master(models.Model):
     
@@ -35,7 +39,14 @@ class Puppet(models.Model):
         """
             Make sure our friends share our alignment or are neutral
         """
-        return queryset.filter(Q(alignment=alignment) | Q(alignment=ALIGNMENT_NEUTRAL)).exclude(id=id)
+        same_alignment = queryset.filter(alignment=alignment).exclude(id=id)
+        if alignment in (None, ALIGNMENT_NEUTRAL):
+            return same_alignment
+        else:
+            return (
+                        (alignment_display(alignment), same_alignment),
+                        ('Neutral', queryset.filter(alignment=ALIGNMENT_NEUTRAL))
+                    )
     
     def __unicode__(self):
         return u"%s puppet (%d)" % (self.get_alignment_display(), self.id)
@@ -57,6 +68,9 @@ class Enemy(models.Model):
         if puppet__alignment is None:
             return EmptyQuerySet()
         else:
-            return queryset.exclude(alignment=puppet__alignment)
-    
-        
+            choices = []
+            for alignment in ALIGNMENTS:
+                value, display = alignment
+                if value != puppet__alignment:
+                    choices.append((display, queryset.filter(alignment=value)))
+            return tuple(choices)

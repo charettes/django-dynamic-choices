@@ -54,7 +54,13 @@
   
   function assignOptions(element, options) {
     $(options).each(function(index, option) {
-      $(element).append($('<option></option>').attr({value:option[0]}).html(option[1]));
+      if ($.isArray(option[1])) {
+        var optGroup = $('<optgroup></optgroup>').attr({label: option[0]});
+        assignOptions(optGroup, option[1]);
+        element.append(optGroup);
+      } else {
+        element.append($('<option></option>').attr({value:option[0]}).html(option[1]));
+      }
     });
   };
   
@@ -62,13 +68,7 @@
     select = $(select);
     var value = select.val();
     select.empty();
-    if ('groups' in options) {
-      $(options.groups).each(function(index, group){
-        var optGroup = $('<optgroup></optgroup>').attr({label:group.label});
-        assignOptions(optGroup, group.options);
-        select.append(optGroup);
-      });
-    } else assignOptions(select, options);
+    assignOptions(select, options);
     select.val(value);
   };
   

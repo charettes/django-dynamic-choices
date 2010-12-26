@@ -6,7 +6,7 @@ from ..db.query import DynamicChoicesQueryset, unionize_querysets
 
 class GroupedModelChoiceIterator(ModelChoiceIterator):
     def __init__(self, field):
-        self.field = field
+        super(GroupedModelChoiceIterator, self).__init__(field)
         self.groups = field._groups
     
     def __iter__(self):

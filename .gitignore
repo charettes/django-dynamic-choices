@@ -8,3 +8,4 @@
 .settings
 *.db
 tests/testapp/static/*
+dist/*

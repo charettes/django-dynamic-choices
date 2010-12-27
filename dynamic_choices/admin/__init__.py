@@ -46,6 +46,13 @@ def dynamic_inline_factory(inline_cls):
     
     class cls(inline_cls):
         form = form_cls
+        
+        def get_formset(self, request, obj=None, **kwargs):
+            formset = super(cls, self).get_formset(request, obj=None, **kwargs)
+            if not isinstance(formset.form(), DynamicModelForm):
+                raise Exception('DynamicAdmin inlines\'s formset\'s form must be an instance of DynamicModelForm')
+            return formset
+
     cls.__name__ = "Dynamic%s" % inline_cls.__name__
     return cls
 

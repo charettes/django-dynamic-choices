@@ -46,7 +46,7 @@ def dynamic_inline_factory(inline_cls):
     
     class cls(inline_cls):
         form = form_cls
-    cls.__name__ = "Dynamic%s" % inline_cls
+    cls.__name__ = "Dynamic%s" % inline_cls.__name__
     return cls
 
 class DynamicAdminBase(admin.ModelAdmin.__metaclass__):

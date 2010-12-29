@@ -163,3 +163,19 @@ class AdminChoicesTest(AdminTest):
         json = simplejson.loads(response.content)
         self.assertEqual(json['enemy_set-0-because_of']['value'], [['', '---------']])
         
+    def test_empty_form(self):
+        "Make sure data is provided for an empty form"
+        response = self.client.get('/admin/puppets/puppet/1/choices/', {
+                                                                        'DYNAMIC_CHOICES_FIELDS': 'enemy_set-__prefix__-enemy',
+                                                                        'alignment': 1,
+                                                                        'enemy_set-TOTAL_FORMS': 0,
+                                                                        'enemy_set-INITIAL_FORMS': 0
+                                                                       })
+        json = simplejson.loads(response.content)
+        self.assertEqual(json['enemy_set-__prefix__-enemy']['value'], [
+                                                                       ['', '---------'],
+                                                                       ['Evil', [[2, 'Evil puppet (2)'],]],
+                                                                       ['Neutral', []],
+                                                                       ])
+        
+        

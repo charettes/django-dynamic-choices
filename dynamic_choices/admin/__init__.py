@@ -31,6 +31,13 @@ def dynamic_formset_factory(fieldset_cls, initial):
                 except (ValueError, IndexError):
                     store.insert(i, initial)
             return super(cls, self)._construct_forms()
+        
+        def _get_empty_form(self, **kwargs):
+            defaults = {'initial': initial}
+            defaults.update(kwargs)
+            return super(cls, self)._get_empty_form(**defaults)
+        empty_form = property(_get_empty_form)
+            
     cls.__name__ = "Dynamic%s" % fieldset_cls.__name__
     return cls
 
@@ -191,11 +198,12 @@ class DynamicAdmin(admin.ModelAdmin):
         
         form = self.get_form(request)(request.GET, instance=obj)
         data = get_dynamic_choices_from_form(form)
-        
+
         for formset in self.get_formsets(request, obj):
             prefix = formset.get_default_prefix()
             try:
-                forms = formset(request.GET, instance=obj).forms
+                fs = formset(request.GET, instance=obj)
+                forms = fs.forms + [fs.empty_form]
             except ValidationError:
                 return HttpResponseBadRequest("Missing %s ManagementForm data" % prefix)
             for form in forms:

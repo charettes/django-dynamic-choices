@@ -1,2 +1,4 @@
 include README
+include CHANGELOG
+include LICENSE
 recursive-include dynamic_choices/static *

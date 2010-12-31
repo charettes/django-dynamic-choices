@@ -139,6 +139,30 @@ class DynamicAdminFormTest(AdminTest):
         
     #TODO: Add test_(GET & POST)_edit testcases
     
+    def test_user_defined_forms(self):
+        from django.forms import models
+        from dynamic_choices.admin import DynamicAdmin
+        from django.contrib.admin import TabularInline, site
+        
+        class UserDefinedModelForm(models.ModelForm):
+            pass
+        
+        class UserDefinedInline(TabularInline):
+            form = UserDefinedModelForm
+            model = Puppet
+        
+        class UserDefinedAdmin(DynamicAdmin):
+            form = UserDefinedModelForm
+            inlines = [UserDefinedInline]
+        
+        admin = UserDefinedAdmin(Puppet, site)
+        
+        self.assertTrue(issubclass(admin.form, DynamicModelForm),
+                        'User defined forms should be subclassed from DynamicModelForm by metaclass')
+        
+        self.assertTrue(issubclass(admin.inlines[0].form, DynamicModelForm),
+                        'User defined inline forms should be subclassed from DynamicModelForm by dynamic_inline_factory')
+    
 class AdminChoicesTest(AdminTest):
     
     def test_fk_as_empty_string(self):

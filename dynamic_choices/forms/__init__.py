@@ -5,7 +5,9 @@ from django.db.models.sql.constants import LOOKUP_SEP
 from fields import DynamicModelChoiceField,\
     DynamicModelMultipleChoiceField
 
-def dynamic_model_form_factory(model_form_cls):
+__all__ = ('DynamicModelForm', 'dynamic_model_form_factory')
+
+def original_dynamic_model_form_factory(model_form_cls):
     class cls(model_form_cls):
         def __init__(self, *args, **kwargs):
             super(cls, self).__init__(*args, **kwargs)
@@ -42,8 +44,10 @@ def dynamic_model_form_factory(model_form_cls):
     cls.__name__ = "Dynamic%s" % model_form_cls.__name__
     return cls
 
-DynamicModelForm = dynamic_model_form_factory(ModelForm)
+DynamicModelForm = original_dynamic_model_form_factory(ModelForm)
 
-def model_form_binding_resolver(form):
-    pass
+def dynamic_model_form_factory(model_form_cls):
+    cls = original_dynamic_model_form_factory(model_form_cls)
+    cls.__bases__ += (DynamicModelForm,)
+    return cls
                 

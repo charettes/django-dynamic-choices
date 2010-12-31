@@ -55,11 +55,15 @@ class DynamicChoicesField(object):
                 step = depth
                 field = fields[-1]
             else:
+                # We're going to try to lookup every step of the descriptor.
+                # We first try field1, then field1__field2, etc..
+                # When there's a match we start over with fieldmatch and set the lookup data
+                # to the matched value.
+                field_name = "%s"
                 for field in fields:
-                    # Field name lookup
-                    # foo
-                    if field.name in lookup_data:
-                        value = lookup_data[field.name]
+                    field_name = field_name % field.name
+                    if field_name in lookup_data:
+                        value = lookup_data[field_name]
                         if step != depth:
                             if isinstance(field, ManyToManyField):
                                 # We cannot lookup in m2m, it must be the final step
@@ -74,9 +78,10 @@ class DynamicChoicesField(object):
                                         # Invalid object
                                         break
                                 lookup_data = model_to_dict(value)
+                                field_name = "%s"
                             step += 1
-                    else:
-                        break
+                    elif step != depth:
+                        field_name = "%s%s%s" % (field_name, LOOKUP_SEP, '%s')
             
             # We reached descriptors depth
             if step == depth:

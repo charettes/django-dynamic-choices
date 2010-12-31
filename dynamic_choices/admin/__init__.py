@@ -146,7 +146,7 @@ def dynamic_admin_factory(admin_cls):
                 prefix = formset.get_default_prefix()
                 for rel in inline_rels:
                     if LOOKUP_SEP in rel:
-                        base, field, = rel.split(LOOKUP_SEP)
+                        base, field = rel.split(LOOKUP_SEP)[0:2]
                         if base == model_name and field in form.fields:
                             add_fields(fields, id(field), [inline_field_selector(prefix, field) \
                                                            for field in inline_rels[rel] if field in formset_form.fields])

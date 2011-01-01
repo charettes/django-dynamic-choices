@@ -138,8 +138,9 @@ def dynamic_admin_factory(admin_cls):
             form = self.get_form(request)()
             rels = form.get_dynamic_relationships()
             for rel in rels:
+                field_name = rel.split(LOOKUP_SEP)[0]
                 if rel in form.fields:
-                    add_fields(fields, id(rel), [id(field) for field in rels[rel] if field in form.fields])
+                    add_fields(fields, id(field_name), [id(field) for field in rels[rel] if field in form.fields])
                     
             inlines = {}
             for formset in self.get_formsets(request):

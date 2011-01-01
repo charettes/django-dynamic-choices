@@ -132,7 +132,10 @@ def dynamic_admin_factory(admin_cls):
             url = "%schoices/" % request.META.get('HTTP_REFERER')
             app_name, model_name = self.model._meta.app_label, self.model._meta.module_name
             
-            form = modelform_factory(self.model, form=self.form)()
+            # Use get_form in order to allow formfield override
+            # We should create a fake request from referer but all this
+            # hack will be fixed when the code is embed directly in the page
+            form = self.get_form(request)()
             rels = form.get_dynamic_relationships()
             for rel in rels:
                 if rel in form.fields:

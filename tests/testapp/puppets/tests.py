@@ -26,7 +26,7 @@ class DynamicForeignKeyTest(TestCase):
 
 class AdminTest(TestCase):
     
-    fixtures = ['dynamic_admin_test']
+    fixtures = ['initial_data', 'dynamic_admin_test']
     
     def setUp(self):
         self.client = Client()

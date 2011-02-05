@@ -121,13 +121,17 @@ class DynamicChoicesField(object):
             spec = inspect.getargspec(self._choices_callback)
             
             # Make sure the callback has the correct number or arg
-            if (len(spec.args) - len(spec.defaults)) != args_length:
+            if spec.defaults is not None:
+                spec_defaults_len = len(spec.defaults)
+                args_length += spec_defaults_len
+                self._choices_relationships = spec.args[-spec_defaults_len:]
+            else:
+                self._choices_relationships = []
+            
+            if len(spec.args) != args_length:
                 error('Specified choices callback must accept only a single arg')
             
             self._choices_callback_field_descriptors = {}
-            spec = inspect.getargspec(self._choices_callback)
-            
-            self._choices_relationships = spec.args[-len(spec.defaults):]
             
             # We make sure field descriptors are valid
             for descriptor in self._choices_relationships:

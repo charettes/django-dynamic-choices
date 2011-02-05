@@ -32,6 +32,9 @@ class Puppet(models.Model):
     
     alignment = models.SmallIntegerField(choices=ALIGNMENTS)
     master = DynamicChoicesForeignKey(Master, choices=same_alignment)
+    secret_lover = DynamicChoicesForeignKey('self', choices='choices_for_secret_lover',
+                                            related_name='secret_lover_set',
+                                            blank=True, null=True)
     friends = DynamicChoicesManyToManyField('self', choices='choices_for_friends', blank=True, null=True)
     enemies = DynamicChoicesManyToManyField('self', through='Enemy', symmetrical=False, blank=True, null=True)
     
@@ -47,6 +50,9 @@ class Puppet(models.Model):
                         (alignment_display(alignment), same_alignment),
                         ('Neutral', queryset.filter(alignment=ALIGNMENT_NEUTRAL))
                     )
+    
+    def choices_for_secret_lover(self, queryset):
+        return queryset
     
     def __unicode__(self):
         return u"%s puppet (%d)" % (self.get_alignment_display(), self.id)

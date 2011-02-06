@@ -15,6 +15,7 @@ from django.utils.functional import update_wrapper
 
 from ..forms import DynamicModelForm, dynamic_model_form_factory
 from ..forms.fields import DynamicModelChoiceField
+from django.utils.safestring import SafeUnicode
 
 def dynamic_formset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
@@ -85,12 +86,12 @@ def dynamic_admin_factory(admin_cls):
         
         __metaclass__ = meta_cls
     
+        change_form_template = 'admin/dynamic_choices/change_form.html'
+    
         def _media(self):
             media = super(cls, self)._media()
-            info = self.model._meta.app_label, self.model._meta.module_name
             media.add_js(['/static/js/dynamic-choices.js',
-                          '/static/js/dynamic-choices-admin.js',
-                          '/admin/%s/%s/choices-binder.js' % info])
+                          '/static/js/dynamic-choices-admin.js'])
             return media
         media = property(_media)
     
@@ -107,18 +108,14 @@ def dynamic_admin_factory(admin_cls):
             info = self.model._meta.app_label, self.model._meta.module_name
     
             urlpatterns = patterns('',
-                url(r'choices-binder.js$',
-                    wrap(self.dynamic_choices_binder),
-                    name='%s_%s_dynamic_admin_binder' % info),
                 url(r'(?:add|(?P<object_id>\w+))/choices/$',
                     wrap(self.dynamic_choices),
                     name="%s_%s_dynamic_admin" % info),
             ) + super(cls, self).get_urls()
     
             return urlpatterns
-        
-        #TODO: Directly embed binder in the code instead of loading it via HTTP
-        def dynamic_choices_binder(self, request):
+
+        def get_dynamic_choices_binder(self, request):
     
             id = lambda field: "[name='%s']" % field
             inline_field_selector = lambda fieldset, field: "[name^='%s-'][name$='-%s']" % (fieldset, field)
@@ -129,7 +126,6 @@ def dynamic_admin_factory(admin_cls):
                     to_fields[to_field] = set()
                 to_fields[to_field].update(bind_fields)
             
-            url = "%schoices/" % request.META.get('HTTP_REFERER')
             app_name, model_name = self.model._meta.app_label, self.model._meta.module_name
             
             # Use get_form in order to allow formfield override
@@ -169,9 +165,8 @@ def dynamic_admin_factory(admin_cls):
                 for field, bindeds in inline_fields.iteritems():
                     inlines[fieldset][field] = list(bindeds)
                 
-            return HttpResponse('django.dynamicAdmin("%s", %s, %s);' % (url,
-                                                                        simplejson.dumps(fields),
-                                                                        simplejson.dumps(inlines)), mimetype='text/javascript')
+            return SafeUnicode(u"django.dynamicAdmin(%s, %s);" % (simplejson.dumps(fields),
+                                                                  simplejson.dumps(inlines)))
         
         def dynamic_choices(self, request, object_id=None):
     
@@ -257,6 +252,16 @@ def dynamic_admin_factory(admin_cls):
                 if len(initial):
                     formset = dynamic_formset_factory(formset, fk_initial)
                 yield formset
+                
+        def add_view(self, request, form_url='', extra_context=None):
+            context = {'dynamic_choices_binder': self.get_dynamic_choices_binder(request)}
+            context.update(extra_context or {})
+            return super(cls, self).add_view(request, form_url='', extra_context=context)
+
+        def change_view(self, request, object_id, extra_context=None):
+            context = {'dynamic_choices_binder': self.get_dynamic_choices_binder(request)}
+            context.update(extra_context or {})
+            return super(cls, self).change_view(request, object_id, extra_context=context)
 
     return cls
 

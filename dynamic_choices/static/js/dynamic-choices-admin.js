@@ -36,7 +36,8 @@
     assignOptions(chosenField, chosens);
   };
 
-  context.dynamicAdmin = function(url, fields, inlines){
+  context.dynamicAdmin = function(fields, inlines){
+  	var url = document.location.pathname + 'choices/';
     $(document).ready(function(){
       for (f in fields) {
         $(f).bindFields(url, fields[f].join(', '));

@@ -2,6 +2,12 @@
 django-dynamic-choices changelog
 ============================
 
+Version 0.1.3
+--------------------------------
+
+* embed admin choices binder directly in the page
+	(make sure to extend "admin/dynamic_choices_change_form.html" if you're overriding DynamicAdmin.change|add_form_template)
+
 Version 0.1.2, 5 February 2011:
 --------------------------------
 

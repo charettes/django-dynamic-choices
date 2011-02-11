@@ -1,3 +1,4 @@
+#TODO: Fix this import mess
 from django.contrib import admin
 from django.contrib.admin.util import unquote
 from django.core.exceptions import ValidationError
@@ -16,6 +17,15 @@ from django.utils.functional import update_wrapper
 from ..forms import DynamicModelForm, dynamic_model_form_factory
 from ..forms.fields import DynamicModelChoiceField
 from django.utils.safestring import SafeUnicode
+from django.conf import settings
+
+try:
+    static_url = settings.STATIC_URL
+except AttributeError:
+    try:
+        static_url = settings.MEDIA_URL
+    except AttributeError:
+        static_url = ''
 
 def dynamic_formset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
@@ -90,8 +100,8 @@ def dynamic_admin_factory(admin_cls):
     
         def _media(self):
             media = super(cls, self)._media()
-            media.add_js(['/static/js/dynamic-choices.js',
-                          '/static/js/dynamic-choices-admin.js'])
+            media.add_js(["%sjs/dynamic-choices.js" % static_url,
+                          "%sjs/dynamic-choices-admin.js" % static_url])
             return media
         media = property(_media)
     

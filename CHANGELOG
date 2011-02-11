@@ -5,6 +5,7 @@ django-dynamic-choices changelog
 Version 0.1.3
 --------------------------------
 
+* fixed an issue with admin dynamic-choices js files not considering settings.(STATIC|MEDIA)_URL. Thanks bmeyer71@github.com
 * embed admin choices binder directly in the page
 	(make sure to extend "admin/dynamic_choices_change_form.html" if you're overriding DynamicAdmin.change|add_form_template)
 

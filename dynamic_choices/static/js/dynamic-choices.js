@@ -1,8 +1,9 @@
-(function($){
+($ || jQuery || django.jQuery)(document).ready(function(){
 
-  var DATA_BOUND_FIELDS = 'data-dynamic-choices-bound-fields',
+	var $ = $ || jQuery || django.jQuery,
+			DATA_BOUND_FIELDS = 'data-dynamic-choices-bound-fields',
       DATA_FORMSET = 'data-dynamic-choices-formset';
-
+      
   var error = (function(){
     if ('console' in window && $.isFunction(console.error))
       return function(e) { // We must wrap the function see 
@@ -127,6 +128,6 @@
       }).attr(DATA_FORMSET, fieldset);
     });
   };
-  $.fn.bindFieldset.formsetsBindings = {}
-
-})(jQuery || django.jQuery);
+  $.fn.bindFieldset.formsetsBindings = {};
+	
+});

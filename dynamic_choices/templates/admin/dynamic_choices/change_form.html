@@ -1,4 +1,4 @@
 {% extends "admin/change_form.html" %}
 {% block extrahead %}{{ block.super }}
-<script type="text/javascript">{{ dynamic_choices_binder }}</script>
+<script type="text/javascript">django.jQuery(document).ready(function(){ {{ dynamic_choices_binder }} });</script>
 {% endblock %}

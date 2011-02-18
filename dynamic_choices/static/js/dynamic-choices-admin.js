@@ -1,6 +1,6 @@
-(function(context){
+($ || jQuery || django.jQuery)(document).ready(function(){
 
-  var $ = context.jQuery;
+  var $ = ($ || jQuery || django.jQuery);
 
   var assignOptions = $.fn.updateFields.widgetHandlers['default'];
 
@@ -36,7 +36,7 @@
     assignOptions(chosenField, chosens);
   };
 
-  context.dynamicAdmin = function(fields, inlines){
+  django.dynamicAdmin = function(fields, inlines){
   	var url = document.location.pathname + 'choices/';
     $(document).ready(function(){
       for (f in fields) {
@@ -48,4 +48,107 @@
     });
   };
   
-})(django);
+  var DATA_ORIGINAL_HREF = 'data-original-href';
+  
+  function getAddLink(element) {
+  	var addLink = $('#add_' + element.id);
+  	if (!addLink.length) throw new Error('Cannot find add link of field ' + element.id);
+  	return addLink;
+  };
+  
+  function prepareAddLink(element) {
+  	var addLink = getAddLink(element);
+		addLink.attr(DATA_ORIGINAL_HREF, addLink.attr('href'));
+  };
+  
+  function updateAddLink(element, fields, fieldsetFields, parametersCallback) {
+  	var addLink = getAddLink(element),
+  			parameters = {},
+  			encodedParameters = [];
+  	
+  	$(fields).each(function(index, field){
+  		var name = $(field).attr('name'),
+  				value = $(field).val();
+  		if (value) parameters[name] = value;
+  	});
+  	$(fieldsetFields).each(function(index, field){
+  		var name = inlineField(field).name,
+  				value = $(field).val();
+  		if (value) parameters[name] = value;
+  	});
+		
+		if ($.isFunction(parametersCallback)) parameters = parametersCallback(parameters);
+			
+  	for (var name in parameters) {
+  		encodedParameters.push([encodeURI(name), encodeURI(parameters[name])].join('='));
+  	}
+  	
+  	$(addLink).attr('href', addLink.attr(DATA_ORIGINAL_HREF) + '?' + encodedParameters.join('&'));
+  };
+  
+  django.dynamicAdmin.bindFieldsAddLink = function(field, fields, parametersCallback) {
+  	$(field).each(function(index, element){
+  		prepareAddLink(element);
+  		$(fields).change(function(){
+				updateAddLink(element, fields, null, parametersCallback);
+			});
+			updateAddLink(element, fields, null, parametersCallback);
+  	});
+  };
+  
+  function inlineField(field) {
+  	var field = $(field).attr('name').split('-');
+  	return {fieldset: field[0], index: field[1], name: field[2]}
+  };
+  
+  function buildInlineFieldSelector(fieldName) {
+  	return '[name$="' + fieldName + '"]';
+  };
+  
+  function buildInlineFieldId(formsetName, fieldName, fieldIndex) {
+  	return '#id_' + formsetName + '-' + fieldIndex + '-' + fieldName;
+  };
+  
+  function buildFormsetFieldsSelector(formsetName, fields, fieldIndex) {
+  	return $(fields).map(function(index, field){
+  		return buildInlineFieldId(formsetName, field, fieldIndex);
+  	}).toArray().join(', ');
+  };
+  
+  django.dynamicAdmin.bindFormsetFieldsAddLink = function(formset, field, bindedFormsetFields, bindedFormFieldsSelector, parametersCallback) {
+  	bindedFormsetFields = bindedFormsetFields || [];
+  	bindedFormFieldsSelector = bindedFormFieldsSelector || '';
+  	var fieldSelector = buildInlineFieldSelector(field);
+  	$(formset).each(function(index, formset){
+  		var formsetName = formset.id.match(/^(\w+)-group$/)[1]
+  		bindedFieldsetFieldsSelector = $(bindedFormsetFields)
+  																		.map(function(i, e){return buildInlineFieldSelector(e)})
+  																		.toArray().join(', ');
+  		$(formset).find(bindedFieldsetFieldsSelector).change(function(event){
+  			var index = inlineField(event.target).index;
+  			updateAddLink($(buildInlineFieldId(formsetName, field, index))[0], 
+  										bindedFormFieldsSelector,
+  										buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
+  										parametersCallback);
+  		});
+  		$(bindedFormFieldsSelector).change(function(event){
+  			$(formset).find(fieldSelector).each(function(index, element){
+  				var index = inlineField(element).index;
+  				updateAddLink(element,
+  											bindedFormFieldsSelector,
+  											buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
+  											parametersCallback);
+  			});
+  		});
+  		$(formset).find(fieldSelector).each(function(index, element){
+  			prepareAddLink(element);
+  			var index = inlineField(element).index;
+  			updateAddLink(element,
+  										bindedFormFieldsSelector,
+  										buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
+  										parametersCallback);
+  		});
+  	});
+  };
+  
+});

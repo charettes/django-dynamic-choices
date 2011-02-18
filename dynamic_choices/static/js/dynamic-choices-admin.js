@@ -124,7 +124,7 @@
   		bindedFieldsetFieldsSelector = $(bindedFormsetFields)
   																		.map(function(i, e){return buildInlineFieldSelector(e)})
   																		.toArray().join(', ');
-  		$(formset).find(bindedFieldsetFieldsSelector).change(function(event){
+  		$(formset).find(bindedFieldsetFieldsSelector).live('change', function(event){
   			var index = inlineField(event.target).index;
   			updateAddLink($(buildInlineFieldId(formsetName, field, index))[0], 
   										bindedFormFieldsSelector,

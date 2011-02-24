@@ -43,6 +43,7 @@
             var data = json[field.name];
             if (data.widget in handlers) {
               handlers[data.widget](field, data.value);
+              $(field).trigger('change', {'triggeredByDynamicChoices': true});
             } else error('Missing handler for "' + data.widget + '" widget.');
           }
           $(field).removeClass('loading');
@@ -80,7 +81,8 @@
   $.fn.bindFields = function(url, fields) {
     var handlers = $.fn.bindFields.widgetHandlers;
     return this.each(function(index, field){
-      $(field).change(function(){
+      $(field).change(function(event, data){
+      	if (data && 'triggeredByDynamicChoices' in data) return;
         $(fields).updateFields(url, field.form);
       }).attr(DATA_BOUND_FIELDS, fields);
     });
@@ -121,7 +123,8 @@
       return formsetFieldBoundFields(fieldset, field, fields, extractor, builder);
     };
     return this.each(function(index, container){
-      $(container).change(function(event){
+      $(container).change(function(event, data){
+      	if (data && 'triggeredByDynamicChoices' in data) return;
         var target = event.target,
             selectors = formsetFieldBoundFields(fieldset, target, fields, extractor, builder);
         $(selectors).updateFields(url, target.form);

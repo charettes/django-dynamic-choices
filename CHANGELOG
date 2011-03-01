@@ -5,6 +5,7 @@ django-dynamic-choices changelog
 Version 0.1.4
 --------------------------------
 
+* make sure admin select widgets trigger 'change' events when a new option is added to them
 * added js field onchange bindings while making sure to avoid circular references
 
 Version 0.1.3, 18 February 2011:

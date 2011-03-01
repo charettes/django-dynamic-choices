@@ -159,7 +159,7 @@
 		evt.stopImmediatePropagation();
 		setTimeout(function(){
 				if (val != elm.val()) elm.trigger('change', {'nodeInsertedEvent': evt});
-			}, 0, this);
+			}, 0);
 	});
   
 });

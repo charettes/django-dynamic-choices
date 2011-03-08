@@ -13,6 +13,8 @@ from django.template.defaultfilters import escape
 from django.utils import simplejson
 from django.utils.encoding import force_unicode
 from django.utils.functional import update_wrapper
+from django.utils.functional import Promise
+from django.utils.encoding import force_unicode
 
 from ..forms import DynamicModelForm, dynamic_model_form_factory
 from ..forms.fields import DynamicModelChoiceField
@@ -26,6 +28,37 @@ except AttributeError:
         static_url = settings.MEDIA_URL
     except AttributeError:
         static_url = ''
+
+class LazyEncoder(simplejson.JSONEncoder):
+    """
+        Encoder used for 
+    """
+    def default(self, obj):
+        if isinstance(obj, Promise):
+            return force_unicode(obj)
+        return super(LazyEncoder, self).default(obj)
+lazy_encoder = LazyEncoder()
+
+
+def get_dynamic_choices_from_form(form):
+    fields = {}
+    if form.prefix:
+        prefix = "%s-%s" % (form.prefix, '%s')
+    else:
+        prefix = '%s'
+    for name, field in form.fields.iteritems():
+        if isinstance(field, DynamicModelChoiceField):
+            widget_cls = field.widget.widget.__class__
+            if widget_cls in (Select, SelectMultiple):
+                widget = 'default'
+            else:
+                widget = "%s.%s" % (widget_cls.__module__,
+                                    widget_cls.__name__)
+            fields[prefix % name] = {
+                                     'widget': widget,
+                                     'value': list(field.widget.choices)
+                                     }
+    return fields
 
 def dynamic_formset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
@@ -179,27 +212,7 @@ def dynamic_admin_factory(admin_cls):
                                                                   simplejson.dumps(inlines)))
         
         def dynamic_choices(self, request, object_id=None):
-    
-            def get_dynamic_choices_from_form(form):
-                fields = {}
-                if form.prefix:
-                    prefix = "%s-%s" % (form.prefix, '%s')
-                else:
-                    prefix = '%s'
-                for name, field in form.fields.iteritems():
-                    if isinstance(field, DynamicModelChoiceField):
-                        widget_cls = field.widget.widget.__class__
-                        if widget_cls in (Select, SelectMultiple):
-                            widget = 'default'
-                        else:
-                            widget = "%s.%s" % (widget_cls.__module__,
-                                                widget_cls.__name__)
-                        fields[prefix % name] = {
-                                                 'widget': widget,
-                                                 'value': list(field.widget.choices)
-                                                 }
-                return fields
-            
+                    
             opts = self.model._meta
             obj = self.get_object(request, object_id)
             # Make sure the specified object exists
@@ -225,8 +238,8 @@ def dynamic_admin_factory(admin_cls):
                 for field in data.keys():
                     if not (field in fields):
                         del data[field]
-                        
-            return HttpResponse(simplejson.dumps(data), mimetype='application/json')
+            
+            return HttpResponse(lazy_encoder.encode(data), mimetype='application/json')
         
         # Make sure to pass request data to fieldsets
         # so they can use it to define choices

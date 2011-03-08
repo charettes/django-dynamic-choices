@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models.query import EmptyQuerySet
 from django.utils.encoding import force_unicode
+from django.utils.translation import ugettext_lazy as _
 
 from dynamic_choices.db.models import DynamicChoicesForeignKey, DynamicChoicesManyToManyField
 
@@ -78,5 +79,5 @@ class Enemy(models.Model):
             for alignment in ALIGNMENTS:
                 value, display = alignment
                 if value != puppet__alignment:
-                    choices.append((display, queryset.filter(alignment=value)))
+                    choices.append((_(display), queryset.filter(alignment=value)))
             return tuple(choices)

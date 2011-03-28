@@ -2,6 +2,11 @@
 django-dynamic-choices changelog
 ============================
 
+Version 0.1.5:
+--------------------------------
+
+* make DynamicChoicesQueryset cloneable
+
 Version 0.1.4, 8 March 2011:
 --------------------------------
 

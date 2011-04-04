@@ -88,7 +88,9 @@
   
   django.dynamicAdmin.bindFieldsAddLink = function(field, fields, parametersCallback) {
   	$(field).each(function(index, element){
-  		prepareAddLink(element);
+  		try {
+  			prepareAddLink(element);
+  		} catch (e) {return}
   		$(fields).change(function(){
 				updateAddLink(element, fields, null, parametersCallback);
 			});

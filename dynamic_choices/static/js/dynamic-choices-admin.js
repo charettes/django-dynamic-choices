@@ -126,6 +126,16 @@
   		bindedFieldsetFieldsSelector = $(bindedFormsetFields)
   																		.map(function(i, e){return buildInlineFieldSelector(e)})
   																		.toArray().join(', ');
+  		var fields = $(formset).find(fieldSelector).map(function(index, element){
+  			try {prepareAddLink(element)} catch(e) {return false};
+  			var index = inlineField(element).index;
+  			updateAddLink(element,
+  										bindedFormFieldsSelector,
+  										buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
+  										parametersCallback);
+  			return true;
+  		}).toArray();
+  		if ($.inArray(true, fields) == -1) return;
   		$(formset).find(bindedFieldsetFieldsSelector).live('change', function(event){
   			var index = inlineField(event.target).index;
   			updateAddLink($(buildInlineFieldId(formsetName, field, index))[0], 
@@ -141,14 +151,6 @@
   											buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
   											parametersCallback);
   			});
-  		});
-  		$(formset).find(fieldSelector).each(function(index, element){
-  			prepareAddLink(element);
-  			var index = inlineField(element).index;
-  			updateAddLink(element,
-  										bindedFormFieldsSelector,
-  										buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
-  										parametersCallback);
   		});
   	});
   };

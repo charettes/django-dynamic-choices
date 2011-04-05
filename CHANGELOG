@@ -2,9 +2,10 @@
 django-dynamic-choices changelog
 ============================
 
-Version 0.1.5:
+Version 0.1.5, 5 April 2011:
 --------------------------------
 
+* fixed some issue with the add link binders in the admin
 * make DynamicChoicesQueryset cloneable
 
 Version 0.1.4, 8 March 2011:

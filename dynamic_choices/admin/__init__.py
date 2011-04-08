@@ -1,25 +1,26 @@
-#TODO: Fix this import mess
+
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.util import unquote
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.forms.formsets import BaseFormSet
-from django.forms.models import _get_foreign_key, model_to_dict, ModelForm,\
-    modelform_factory
+from django.forms.models import (_get_foreign_key, model_to_dict, ModelForm,
+    modelform_factory)
 from django.forms.widgets import Select, SelectMultiple
 from django.http import Http404, HttpResponseBadRequest, HttpResponse
+from django.template.base import TemplateDoesNotExist
 from django.template.defaultfilters import escape
+from django.template.loader import get_template
+from django.template.loader_tags import ExtendsNode
 from django.utils import simplejson
 from django.utils.encoding import force_unicode
-from django.utils.functional import update_wrapper
-from django.utils.functional import Promise
-from django.utils.encoding import force_unicode
+from django.utils.functional import Promise, update_wrapper
+from django.utils.safestring import SafeUnicode
 
 from ..forms import DynamicModelForm, dynamic_model_form_factory
 from ..forms.fields import DynamicModelChoiceField
-from django.utils.safestring import SafeUnicode
-from django.conf import settings
 
 try:
     static_url = settings.STATIC_URL
@@ -107,7 +108,25 @@ def dynamic_inline_factory(inline_cls):
     cls.__name__ = "Dynamic%s" % inline_cls.__name__
     return cls
 
+def template_extends(template, expected_parent_name):
+    try:
+        tpl = get_template(template)
+    except TemplateDoesNotExist:
+        return False
+    
+    if (len(tpl.nodelist) and
+        isinstance(tpl.nodelist[0], ExtendsNode)):
+        node = tpl.nodelist[0]
+        if node.parent_name == expected_parent_name:
+            return True
+        else:
+            return template_extends(node.parent_name, expected_parent_name)
+    else:
+        return False
+
 def dynamic_admin_factory(admin_cls):
+    
+    change_form_template = 'admin/dynamic_choices/change_form.html'
     
     class meta_cls(admin_cls.__metaclass__):
         "Metaclass that ensure form and inlines are dynamic"
@@ -117,6 +136,17 @@ def dynamic_admin_factory(admin_cls):
                 attrs['form'] = dynamic_model_form_factory(attrs['form'])
             else:
                 attrs['form'] = DynamicModelForm
+            
+            # Make sure the specified add|change_form_template
+            # extends "admin/dynamic_choices/change_form.html"
+            for t in ('add_form_template', 'change_form_template'):
+                if t in attrs:
+                    if not template_extends(attrs[t], change_form_template):
+                        raise Exception("Make sure specified %s.%s='%s' template extends '%s' "
+                                        "in order to enabled DynamicAdmin" % (name, t, attrs[t],
+                                                                              change_form_template))
+                else:
+                    attrs[t] = change_form_template
             
             # If there's some inlines defined we make sure that their form is dynamic
             # see dynamic_inline_factory
@@ -128,8 +158,6 @@ def dynamic_admin_factory(admin_cls):
     class cls(admin_cls):
         
         __metaclass__ = meta_cls
-    
-        change_form_template = 'admin/dynamic_choices/change_form.html'
     
         def _media(self):
             media = super(cls, self)._media()

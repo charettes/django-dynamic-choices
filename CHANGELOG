@@ -4,7 +4,8 @@ django-dynamic-choices changelog
 
 Version 0.1.6
 --------------------------------
-
+* raise exception when a custom admin add|change_form_template is specified
+	on a DynamicAdmin if it doesn't extends the dynamic_choices one.
 * make sure admin select widgets trigger 'change' events when a new option is added to them
 	without relying on DOMEvents.
 

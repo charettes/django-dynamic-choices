@@ -2,6 +2,12 @@
 django-dynamic-choices changelog
 ============================
 
+Version 0.1.6
+--------------------------------
+
+* make sure admin select widgets trigger 'change' events when a new option is added to them
+	without relying on DOMEvents.
+
 Version 0.1.5, 5 April 2011:
 --------------------------------
 

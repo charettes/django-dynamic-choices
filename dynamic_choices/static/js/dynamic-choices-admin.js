@@ -157,13 +157,13 @@
   
   // Creating new instance within the admin doesn't trigger the change event on select fields.
   // Attempt to trigger it correcly.
-	$('select').live('DOMNodeInserted', function(evt){
-		var elm = $(this),
-				val = elm.val();
-		evt.stopImmediatePropagation();
-		setTimeout(function(){
-				if (val != elm.val()) elm.trigger('change', {'nodeInsertedEvent': evt});
-			}, 0);
-	});
+	var originalDismissAddAnotherPopup = dismissAddAnotherPopup;
+  dismissAddAnotherPopup = function(win, newId, newRepr) {
+  	originalDismissAddAnotherPopup(win, newId, newRepr);
+  	newId = html_unescape(newId);
+		newRepr = html_unescape(newRepr);
+		var id = windowname_to_id(win.name);
+		$('#' + id).trigger('change');
+  };
   
 });

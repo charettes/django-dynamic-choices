@@ -139,14 +139,14 @@ def dynamic_admin_factory(admin_cls):
             
             # Make sure the specified add|change_form_template
             # extends "admin/dynamic_choices/change_form.html"
-            for t in ('add_form_template', 'change_form_template'):
+            for t, default in {'add_form_template': None, 'change_form_template': change_form_template}.iteritems():
                 if t in attrs:
                     if not template_extends(attrs[t], change_form_template):
                         raise Exception("Make sure specified %s.%s='%s' template extends '%s' "
                                         "in order to enabled DynamicAdmin" % (name, t, attrs[t],
                                                                               change_form_template))
                 else:
-                    attrs[t] = change_form_template
+                    attrs[t] = default
             
             # If there's some inlines defined we make sure that their form is dynamic
             # see dynamic_inline_factory

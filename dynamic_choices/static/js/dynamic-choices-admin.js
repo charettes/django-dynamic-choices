@@ -165,5 +165,6 @@
 		var id = windowname_to_id(win.name);
 		$('#' + id).trigger('change');
   };
+  dismissAddAnotherPopup.original = originalDismissAddAnotherPopup;
   
 });

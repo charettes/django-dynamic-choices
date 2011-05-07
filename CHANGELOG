@@ -8,6 +8,9 @@ Version 0.1.6
 	on a DynamicAdmin if it doesn't extends the dynamic_choices one.
 * make sure admin select widgets trigger 'change' events when a new option is added to them
 	without relying on DOMEvents.
+* make sure DynamicModelChoiceField's queryset returns distinct objects to avoid raising
+	MultipleObjectsReturned when the dynamically generated queryset spans over multiple tables
+  and returns the same object twice.
 
 Version 0.1.5, 5 April 2011:
 --------------------------------

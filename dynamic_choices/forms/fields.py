@@ -31,7 +31,7 @@ class DynamicModelChoiceField(ModelChoiceField):
         super(DynamicModelChoiceField, self).__init__(*args, **kwargs)
 
     def _get_queryset(self):
-        return self._queryset
+        return self._queryset.distinct()
 
     def _set_queryset(self, queryset):
         self._original_queryset = queryset

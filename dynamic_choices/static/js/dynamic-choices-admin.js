@@ -14,6 +14,11 @@
         fromCache = [],
         toCache = [],
         availables = [], chosens = [];
+        
+    //The widget isn't initialized yet (it might a be an inline empty template)
+    if (availableField.length == 0) {
+    	return assignOptions(chosenField, values);
+    }
 
     SelectBox.cache['id_' + field.name + '_from'] = [];
     SelectBox.cache['id_' + field.name + '_to'] = [];

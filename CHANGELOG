@@ -2,6 +2,11 @@
 django-dynamic-choices changelog
 ============================
 
+Version 0.1.7
+--------------------------------
+* fixed the FilteredSelectMultiple widget handler to works when the the widget
+	is not initialized yet such as when the widget is used in and inline.
+
 Version 0.1.6, 7 May 2011:
 --------------------------------
 * raise exception when a custom admin add|change_form_template is specified

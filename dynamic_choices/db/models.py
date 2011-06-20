@@ -32,7 +32,7 @@ class DynamicChoicesField(object):
             class_prepared.connect(self.__validate_definition,
                                    sender=cls)
     
-    def __validate_definition(self, signal, sender):
+    def __validate_definition(self, signal, sender, **kwargs):
         def error(message):
             raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
 

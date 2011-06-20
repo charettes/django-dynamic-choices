@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+import warnings
 
 import django
 from django.core.exceptions import FieldError, ValidationError
@@ -9,8 +11,8 @@ from django.utils import simplejson
 
 from dynamic_choices.db.models import DynamicChoicesForeignKey
 from dynamic_choices.forms import DynamicModelForm
-from dynamic_choices.forms.fields import DynamicModelMultipleChoiceField,\
-    DynamicModelChoiceField
+from dynamic_choices.forms.fields import (DynamicModelMultipleChoiceField,
+    DynamicModelChoiceField)
 
 from models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
 
@@ -25,7 +27,7 @@ class DynamicForeignKeyTest(TestCase):
         
     def test_invalid_value(self):
         puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_EVIL)
-        self.failUnlessRaises(ValidationError, puppet.full_clean)
+        self.assertRaises(ValidationError, puppet.full_clean)
 
 class AdminTest(TestCase):
     
@@ -205,18 +207,37 @@ class AdminChoicesTest(AdminTest):
                                                                        ['Neutral', []],
                                                                        ])
 
+
 class DefinitionValidationTest(TestCase):
+    
+    @contextmanager
+    def assertDeprecation(self, cls=DeprecationWarning):
+        if hasattr(warnings, 'catch_warnings'):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter('always')
+                yield
+                try:
+                    assert len(w) == 1
+                    assert issubclass(w[-1].category, cls)
+                except AssertionError:
+                    self.fail("No %s raised." % cls.__name__)
     
     def test_method_definition(self):
         with self.assertRaises(FieldError):
             class MissingChoicesCallbackModel(Model):
                 field = DynamicChoicesForeignKey('self', choices='missing_method')
-        
         try:
             class CallableChoicesCallbackModel(Model):
                 field = DynamicChoicesForeignKey('self', choices=lambda qs: qs)
         except FieldError:
             self.fail("Defining a callable choices should work")
+
+    def test_pending_deprecation(self):
+        with self.assertDeprecation(PendingDeprecationWarning):
+            DynamicChoicesForeignKey('self', choices='choices_for_self')
+                
+        with self.assertDeprecation(PendingDeprecationWarning):
+            DynamicChoicesForeignKey('self', choices=lambda qs: qs)
     
     #TODO: Test field descriptors and take a design decision towards args and kwargs
             

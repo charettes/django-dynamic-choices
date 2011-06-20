@@ -1,4 +1,5 @@
 import inspect
+import warnings
 
 from django.core import exceptions
 from django.core.exceptions import FieldError
@@ -10,15 +11,23 @@ from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
 
 from query import dynamic_queryset_factory, unionize_querysets
-from ..forms.fields import DynamicModelChoiceField,\
-    DynamicModelMultipleChoiceField
+from ..forms.fields import (DynamicModelChoiceField,
+    DynamicModelMultipleChoiceField)
 
 class DynamicChoicesField(object):
     
     def __init__(self, *args, **kwargs):
+        self._manager = kwargs.pop('manager', None)
         super(DynamicChoicesField, self).__init__(*args, **kwargs)
+        
         # Hack to bypass non iterable choices validation
         if isinstance(self._choices, basestring) or callable(self._choices):
+            assert self._manager is None, ("You can either specify a manager or "
+                                           "a choices callback, not both at the same time.")
+            warnings.warn("Method and callable choices will be deprecated "
+                          "in 1.2.0. Specify a manager class with an overriden "
+                          "get_queryset_method instead.", PendingDeprecationWarning,
+                          stacklevel=2)
             self._choices_callback = self._choices
             self._choices = []
         else:
@@ -28,24 +37,29 @@ class DynamicChoicesField(object):
     def contribute_to_class(self, cls, name):
         super(DynamicChoicesField, self).contribute_to_class(cls, name)
         
-        if self._choices_callback is not None:
+        if self._choices_callback or self._manager:
             class_prepared.connect(self.__validate_definition,
                                    sender=cls)
     
-    def __validate_definition(self, signal, sender):
+    def __validate_definition(self, signal, sender, **kwargs):
         def error(message):
             raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
-
-        # The choices we're defined by a string
-        # therefore it should be a cls method
-        if isinstance(self._choices_callback, basestring):
-            callback = getattr(self.related.model, self._choices_callback, None)
-            if not callable(callback):
-                error('Cannot find method specified by choices.')
-            args_length = 2 # Since the callback is a method we must emulate the 'self'
-            self._choices_callback = callback
+        
+        if self._manager:
+            self._manager.model = self.rel.to
+            self._choices_callback = self._manager.get_query_set
+            args_length = 1
         else:
-            args_length = 1 # It's a callable, it needs no reference to model instance
+            # The choices we're defined by a string
+            # therefore it should be a cls method
+            if isinstance(self._choices_callback, basestring):
+                callback = getattr(self.related.model, self._choices_callback, None)
+                if not callable(callback):
+                    error('Cannot find method specified by choices.')
+                args_length = 2 # Since the callback is a method we must emulate the 'self'
+                self._choices_callback = callback
+            else:
+                args_length = 1 # It's a callable, it needs no reference to model instance
         
         spec = inspect.getargspec(self._choices_callback)
         
@@ -101,10 +115,13 @@ class DynamicChoicesField(object):
         return self._choices_relationships
     
     def _invoke_choices_callback(self, model_instance, qs, data):
-        args = [qs]
-        # Make sure we pass the instance if the callback is a class method
-        if inspect.ismethod(self._choices_callback):
-            args.insert(0, model_instance)
+        if self._manager:
+            args = []
+        else:
+            args = [qs]
+            # Make sure we pass the instance if the callback is a class method
+            if inspect.ismethod(self._choices_callback):
+                args.insert(0, model_instance)
         
         values = {}
         for descriptor, fields in self._choices_callback_field_descriptors.items():
@@ -206,9 +223,7 @@ class DynamicChoicesForeignKey(DynamicChoicesField, ForeignKey):
                 for m2m in model_instance._meta.many_to_many:
                     data[m2m.name] = getattr(model_instance, m2m.name).all()
             
-            qs = self.rel.to._default_manager.filter(**{self.rel.field_name:value})
-            qs = qs.complex_filter(self.rel.limit_choices_to)
-            
+            qs = self.rel.to._default_manager.get_query_set()
             dcqs = self._invoke_choices_callback(model_instance, qs, data)
             # If a tuple is provided we must build
             # a new Queryset by combining group's ones
@@ -216,6 +231,8 @@ class DynamicChoicesForeignKey(DynamicChoicesField, ForeignKey):
                 qs = qs and unionize_querysets(q[1] for q in dcqs)
             else:
                 qs = dcqs
+            
+            qs = qs.filter(**{self.rel.field_name:value}).complex_filter(self.rel.limit_choices_to)
             
             if not qs.exists():
                 raise exceptions.ValidationError(self.error_messages['invalid'] % {

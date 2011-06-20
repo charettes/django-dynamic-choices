@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.manager import Manager
 from django.db.models.query import EmptyQuerySet
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
@@ -15,12 +16,14 @@ ALIGNMENTS = (
     (ALIGNMENT_NEUTRAL, 'Neutral'),
 )
 
-def same_alignment(queryset, alignment=None):
-    return queryset.filter(alignment=alignment)
-
 def alignment_display(alignment):
     field = Puppet._meta.get_field('alignment')
     return force_unicode(dict(field.flatchoices).get(int(alignment), alignment), strings_only=True)
+
+class SameAlignmentManager(Manager):
+    
+    def get_query_set(self, alignment=None):
+        return super(SameAlignmentManager, self).get_query_set().filter(alignment=alignment)
 
 class Master(models.Model):
     
@@ -32,8 +35,8 @@ class Master(models.Model):
 class Puppet(models.Model):
     
     alignment = models.SmallIntegerField(choices=ALIGNMENTS)
-    master = DynamicChoicesForeignKey(Master, choices=same_alignment)
-    secret_lover = DynamicChoicesForeignKey('self', choices='choices_for_secret_lover',
+    master = DynamicChoicesForeignKey(Master, manager=SameAlignmentManager())
+    secret_lover = DynamicChoicesForeignKey('self',
                                             related_name='secret_lover_set',
                                             blank=True, null=True)
     friends = DynamicChoicesManyToManyField('self', choices='choices_for_friends', blank=True, null=True)
@@ -51,9 +54,6 @@ class Puppet(models.Model):
                         (alignment_display(alignment), same_alignment),
                         ('Neutral', queryset.filter(alignment=ALIGNMENT_NEUTRAL))
                     )
-    
-    def choices_for_secret_lover(self, queryset):
-        return queryset
     
     def __unicode__(self):
         return u"%s puppet (%d)" % (self.get_alignment_display(), self.id)

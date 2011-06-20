@@ -8,6 +8,7 @@ Version 0.1.7, 20 June 2011:
 	is not initialized yet such as when the widget is used in an inline.
 * simplified choices callback validation logic by using the class_prepared signal.
 * added minimal testing for validation logic.
+* fixed an issue with lazy reference FK and M2M.
 
 Version 0.1.6, 7 May 2011:
 --------------------------------

@@ -5,13 +5,14 @@ from django.core.exceptions import FieldError
 from django.db.models import ForeignKey, ManyToManyField
 from django.db.models.base import Model
 from django.db.models.fields import FieldDoesNotExist, Field
+from django.db.models.fields.related import add_lazy_relation
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
 
 from query import dynamic_queryset_factory, unionize_querysets
-from ..forms.fields import DynamicModelChoiceField,\
-    DynamicModelMultipleChoiceField
+from ..forms.fields import (DynamicModelChoiceField,
+    DynamicModelMultipleChoiceField)
 
 class DynamicChoicesField(object):
     
@@ -32,9 +33,11 @@ class DynamicChoicesField(object):
             class_prepared.connect(self.__validate_definition,
                                    sender=cls)
     
-    def __validate_definition(self, signal, sender, **kwargs):
+    def __validate_definition(self, *args, **kwargs):
         def error(message):
             raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
+
+        original_choices_callback = self._choices_callback
 
         # The choices we're defined by a string
         # therefore it should be a cls method
@@ -74,7 +77,19 @@ class DynamicChoicesField(object):
                     field = meta.get_field(lookup)
                     # The field is a foreign key to another model
                     if isinstance(field, ForeignKey):
-                        meta = field.rel.to._meta
+                        try:
+                            meta = field.rel.to._meta
+                        except AttributeError:
+                            # The model hasn't been loaded yet
+                            # so we must stop here and start over
+                            # when it is loaded.
+                            if isinstance(field.rel.to, basestring):
+                                self._choices_callback = original_choices_callback
+                                return add_lazy_relation(field.model, field,
+                                                         field.rel.to,
+                                                         self.__validate_definition)
+                            else:
+                                raise
                         step += 1
                     # We cannot go deeper if it's not a model
                     elif step != depth:

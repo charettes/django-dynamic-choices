@@ -6,6 +6,8 @@ Version 0.1.7
 --------------------------------
 * fixed the FilteredSelectMultiple widget handler to works when the the widget
 	is not initialized yet such as when the widget is used in and inline.
+* simplified choices callback validation logic by using the class_prepared signal.
+* added minimal testing for validation logic.
 
 Version 0.1.6, 7 May 2011:
 --------------------------------

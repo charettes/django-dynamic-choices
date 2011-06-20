@@ -6,6 +6,7 @@ from django.db.models import ForeignKey, ManyToManyField
 from django.db.models.base import Model
 from django.db.models.fields import FieldDoesNotExist, Field
 from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
 
 from query import dynamic_queryset_factory, unionize_querysets
@@ -22,20 +23,84 @@ class DynamicChoicesField(object):
             self._choices = []
         else:
             self._choices_callback = None
-        self._validated_definition = False
         self._choices_relationships = None
     
-    def _has_choices_callback(self):
-        if not self._validated_definition:
-            self.validate_definition()
+    def contribute_to_class(self, cls, name):
+        super(DynamicChoicesField, self).contribute_to_class(cls, name)
         
+        if self._choices_callback is not None:
+            class_prepared.connect(self.__validate_definition,
+                                   sender=cls)
+    
+    def __validate_definition(self, signal, sender):
+        def error(message):
+            raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
+
+        # The choices we're defined by a string
+        # therefore it should be a cls method
+        if isinstance(self._choices_callback, basestring):
+            callback = getattr(self.related.model, self._choices_callback, None)
+            if not callable(callback):
+                error('Cannot find method specified by choices.')
+            args_length = 2 # Since the callback is a method we must emulate the 'self'
+            self._choices_callback = callback
+        else:
+            args_length = 1 # It's a callable, it needs no reference to model instance
+        
+        spec = inspect.getargspec(self._choices_callback)
+        
+        # Make sure the callback has the correct number or arg
+        if spec.defaults is not None:
+            spec_defaults_len = len(spec.defaults)
+            args_length += spec_defaults_len
+            self._choices_relationships = spec.args[-spec_defaults_len:]
+        else:
+            self._choices_relationships = []
+        
+        if len(spec.args) != args_length:
+            error('Specified choices callback must accept only a single arg')
+        
+        self._choices_callback_field_descriptors = {}
+        
+        # We make sure field descriptors are valid
+        for descriptor in self._choices_relationships:
+            lookups = descriptor.split(LOOKUP_SEP)
+            meta = self.related.model._meta
+            depth = len(lookups)
+            step = 1
+            fields = []
+            for lookup in lookups:
+                try:
+                    field = meta.get_field(lookup)
+                    # The field is a foreign key to another model
+                    if isinstance(field, ForeignKey):
+                        meta = field.rel.to._meta
+                        step += 1
+                    # We cannot go deeper if it's not a model
+                    elif step != depth:
+                        error('Invalid descriptor "%s", "%s" is not a ForeignKey to a model' % (
+                               LOOKUP_SEP.join(lookups), LOOKUP_SEP.join(lookups[:step])))
+                    fields.append(field)
+                except FieldDoesNotExist:
+                    # Lookup failed, suggest alternatives
+                    depth_descriptor = LOOKUP_SEP.join(descriptor[:step - 1])
+                    if depth_descriptor:
+                        depth_descriptor += LOOKUP_SEP
+                    choice_descriptors = [(depth_descriptor + name) for name in meta.get_all_field_names()]
+                    error('Invalid descriptor "%s", choices are %s' % (
+                          LOOKUP_SEP.join(descriptor), ', '.join(choice_descriptors)))
+            
+            self._choices_callback_field_descriptors[descriptor] = fields
+    
+    @property
+    def has_choices_callback(self):
         return callable(self._choices_callback)
-    has_choices_callback = property(_has_choices_callback)
+    
+    @property
+    def choices_relationships(self):
+        return self._choices_relationships
     
     def _invoke_choices_callback(self, model_instance, qs, data):
-        if not self._validated_definition:
-            self.validate_definition()
-        
         args = [qs]
         # Make sure we pass the instance if the callback is a class method
         if inspect.ismethod(self._choices_callback):
@@ -95,79 +160,6 @@ class DynamicChoicesField(object):
                     pass
         
         return self._choices_callback(*args, **values)
-    
-    # This method should only be called once, on get_validation_errors.
-    # Since there's no way to provide errors to that method it's called on first
-    # _invoke_choices_callback call.
-    def validate_definition(self):
-        # Mark self as validated
-        self._validated_definition = True
-        
-        def error(message):
-                raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
-        
-        if self._choices_callback:
-            # The choices we're defined by a string
-            # therefore it should be a cls method
-            if isinstance(self._choices_callback, basestring):
-                callback = getattr(self.related.model, self._choices_callback, None)
-                if not callable(callback):
-                    error('Cannot find method specified by choices.')
-                args_length = 2 # Since the callback is a method we must emulate the 'self'
-                self._choices_callback = callback
-            else:
-                args_length = 1 # It's a callable, it needs no reference to model instance
-            
-            spec = inspect.getargspec(self._choices_callback)
-            
-            # Make sure the callback has the correct number or arg
-            if spec.defaults is not None:
-                spec_defaults_len = len(spec.defaults)
-                args_length += spec_defaults_len
-                self._choices_relationships = spec.args[-spec_defaults_len:]
-            else:
-                self._choices_relationships = []
-            
-            if len(spec.args) != args_length:
-                error('Specified choices callback must accept only a single arg')
-            
-            self._choices_callback_field_descriptors = {}
-            
-            # We make sure field descriptors are valid
-            for descriptor in self._choices_relationships:
-                lookups = descriptor.split(LOOKUP_SEP)
-                meta = self.related.model._meta
-                depth = len(lookups)
-                step = 1
-                fields = []
-                for lookup in lookups:
-                    try:
-                        field = meta.get_field(lookup)
-                        # The field is a foreign key to another model
-                        if isinstance(field, ForeignKey):
-                            meta = field.rel.to._meta
-                            step += 1
-                        # We cannot go deeper if it's not a model
-                        elif step != depth:
-                            error('Invalid descriptor "%s", "%s" is not a ForeignKey to a model' % (
-                                   LOOKUP_SEP.join(lookups), LOOKUP_SEP.join(lookups[:step])))
-                        fields.append(field)
-                    except FieldDoesNotExist:
-                        # Lookup failed, suggest alternatives
-                        depth_descriptor = LOOKUP_SEP.join(descriptor[:step - 1])
-                        if depth_descriptor:
-                            depth_descriptor += LOOKUP_SEP
-                        choice_descriptors = [(depth_descriptor + name) for name in meta.get_all_field_names()]
-                        error('Invalid descriptor "%s", choices are %s' % (
-                              LOOKUP_SEP.join(descriptor), ', '.join(choice_descriptors)))
-                
-                self._choices_callback_field_descriptors[descriptor] = fields
-    
-    def _get_choices_relationships(self):
-        if not self._validated_definition:
-            self.validate_definition()
-        return self._choices_relationships
-    choices_relationships = property(_get_choices_relationships)
 
     def __super(self):
         # Dirty hack to allow both DynamicChoicesForeignKey and DynamicChoicesManyToManyField

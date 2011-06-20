@@ -1,15 +1,18 @@
+
 import django
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldError, ValidationError
+from django.db.models import Model
 from django.db.models.query import EmptyQuerySet
 from django.test import TestCase
 from django.test.client import Client
+from django.utils import simplejson
 
+from dynamic_choices.db.models import DynamicChoicesForeignKey
 from dynamic_choices.forms import DynamicModelForm
 from dynamic_choices.forms.fields import DynamicModelMultipleChoiceField,\
     DynamicModelChoiceField
 
 from models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
-from django.utils import simplejson
 
 class DynamicForeignKeyTest(TestCase):
     
@@ -201,5 +204,20 @@ class AdminChoicesTest(AdminTest):
                                                                        ['Evil', [[2, 'Evil puppet (2)'],]],
                                                                        ['Neutral', []],
                                                                        ])
+
+class DefinitionValidationTest(TestCase):
+    
+    def test_method_definition(self):
+        with self.assertRaises(FieldError):
+            class MissingChoicesCallbackModel(Model):
+                field = DynamicChoicesForeignKey('self', choices='missing_method')
         
+        try:
+            class CallableChoicesCallbackModel(Model):
+                field = DynamicChoicesForeignKey('self', choices=lambda qs: qs)
+        except FieldError:
+            self.fail("Defining a callable choices should work")
+    
+    #TODO: Test field descriptors and take a design decision towards args and kwargs
+            
         

@@ -4,7 +4,7 @@ django-dynamic-choices changelog
 
 Version 0.1.8:
 --------------------------------
-* added DynamicOneToOneField.
+* added DynamicChoicesOneToOneField.
 
 Version 0.1.7, 20 June 2011:
 --------------------------------

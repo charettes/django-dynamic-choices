@@ -240,7 +240,7 @@ class DynamicChoicesForeignKey(DynamicChoicesForeignKeyMixin, ForeignKey):
 
     form_class = DynamicModelChoiceField
 
-class DynamicOneToOneField(DynamicChoicesForeignKeyMixin, OneToOneField):
+class DynamicChoicesOneToOneField(DynamicChoicesForeignKeyMixin, OneToOneField):
     
     form_class = DynamicModelChoiceField
 

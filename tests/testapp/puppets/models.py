@@ -5,7 +5,7 @@ from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
 
 from dynamic_choices.db.models import (DynamicChoicesForeignKey, DynamicChoicesManyToManyField,
-    DynamicOneToOneField)
+    DynamicChoicesOneToOneField)
 
 ALIGNMENT_EVIL = 0
 ALIGNMENT_GOOD = 1
@@ -35,9 +35,9 @@ class Puppet(models.Model):
     
     alignment = models.SmallIntegerField(choices=ALIGNMENTS)
     master = DynamicChoicesForeignKey(Master, choices=same_alignment)
-    secret_lover = DynamicOneToOneField('self', choices='choices_for_secret_lover',
-                                        related_name='secretly_loves_me',
-                                        blank=True, null=True)
+    secret_lover = DynamicChoicesOneToOneField('self', choices='choices_for_secret_lover',
+                                               related_name='secretly_loves_me',
+                                               blank=True, null=True)
     friends = DynamicChoicesManyToManyField('self', choices='choices_for_friends', blank=True, null=True)
     enemies = DynamicChoicesManyToManyField('self', through='Enemy', symmetrical=False, blank=True, null=True)
     

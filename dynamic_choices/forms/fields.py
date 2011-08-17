@@ -1,8 +1,9 @@
-from django.forms.fields import ChoiceField
-from django.forms.models import ModelChoiceField, ModelMultipleChoiceField,\
-    ModelChoiceIterator
 
-from ..db.query import DynamicChoicesQueryset, unionize_querysets
+from django.forms.fields import ChoiceField
+from django.forms.models import (ModelChoiceField, ModelChoiceIterator,
+    ModelMultipleChoiceField)
+    
+from dynamic_choices.db.query import DynamicChoicesQueryset, unionize_querysets
 
 class GroupedModelChoiceIterator(ModelChoiceIterator):
     def __init__(self, field):

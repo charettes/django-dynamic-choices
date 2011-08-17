@@ -1,3 +1,4 @@
+
 from django.db import models
 from django.db.models.query import EmptyQuerySet
 from django.utils.encoding import force_unicode

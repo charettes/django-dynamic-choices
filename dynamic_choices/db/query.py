@@ -1,4 +1,5 @@
-from django.db.models.query import QuerySet, EmptyQuerySet
+
+from django.db.models.query import EmptyQuerySet, QuerySet
 
 class DynamicChoicesQueryset(QuerySet):
     

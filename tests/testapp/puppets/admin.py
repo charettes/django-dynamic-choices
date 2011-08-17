@@ -1,5 +1,5 @@
-from django.contrib import admin
 
+from django.contrib import admin
 from dynamic_choices.admin import DynamicAdmin
 
 from models import Puppet, Master

@@ -1,9 +1,10 @@
+
 from django.forms.models import ModelForm
 from django.db.models.fields.related import ManyToManyField
 from django.db.models.sql.constants import LOOKUP_SEP
 
-from fields import DynamicModelChoiceField,\
-    DynamicModelMultipleChoiceField
+from dynamic_choices.forms.fields import (DynamicModelChoiceField,
+    DynamicModelMultipleChoiceField)
 
 __all__ = ('DynamicModelForm', 'dynamic_model_form_factory')
 

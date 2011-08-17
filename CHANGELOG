@@ -2,6 +2,10 @@
 django-dynamic-choices changelog
 ============================
 
+Version 0.1.8:
+--------------------------------
+* added DynamicOneToOneField.
+
 Version 0.1.7, 20 June 2011:
 --------------------------------
 * fixed the FilteredSelectMultiple widget handler to works when the the widget

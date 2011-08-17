@@ -2,7 +2,7 @@ import inspect
 
 from django.core import exceptions
 from django.core.exceptions import FieldError
-from django.db.models import ForeignKey, ManyToManyField
+from django.db.models import ForeignKey, ManyToManyField, OneToOneField
 from django.db.models.base import Model
 from django.db.models.fields import FieldDoesNotExist, Field
 from django.db.models.fields.related import add_lazy_relation
@@ -200,10 +200,8 @@ class DynamicChoicesField(object):
             
         return self.__super().formfield(self, **defaults)
 
-class DynamicChoicesForeignKey(DynamicChoicesField, ForeignKey):
-
-    form_class = DynamicModelChoiceField
-
+class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
+    
     def validate(self, value, model_instance):
         if self.has_choices_callback:
             if self.rel.parent_link:
@@ -237,7 +235,15 @@ class DynamicChoicesForeignKey(DynamicChoicesField, ForeignKey):
                     'model': self.rel.to._meta.verbose_name, 'pk': value})
         else:
             super(DynamicChoicesForeignKey, self).validate(value, model_instance)
-            
+
+class DynamicChoicesForeignKey(DynamicChoicesForeignKeyMixin, ForeignKey):
+
+    form_class = DynamicModelChoiceField
+
+class DynamicOneToOneField(DynamicChoicesForeignKeyMixin, OneToOneField):
+    
+    form_class = DynamicModelChoiceField
+
 class DynamicChoicesManyToManyField(DynamicChoicesField, ManyToManyField):
     
     form_class = DynamicModelMultipleChoiceField

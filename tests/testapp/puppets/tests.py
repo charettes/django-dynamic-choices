@@ -9,8 +9,8 @@ from django.utils import simplejson
 
 from dynamic_choices.db.models import DynamicChoicesForeignKey
 from dynamic_choices.forms import DynamicModelForm
-from dynamic_choices.forms.fields import DynamicModelMultipleChoiceField,\
-    DynamicModelChoiceField
+from dynamic_choices.forms.fields import (DynamicModelMultipleChoiceField,
+    DynamicModelChoiceField)
 
 from models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
 
@@ -26,6 +26,33 @@ class DynamicForeignKeyTest(TestCase):
     def test_invalid_value(self):
         puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_EVIL)
         self.failUnlessRaises(ValidationError, puppet.full_clean)
+        
+class DynamicOneToOneField(TestCase):
+    
+    def setUp(self):
+        self.good_puppet = Puppet.objects.get(alignment=ALIGNMENT_GOOD)
+        self.evil_puppet = Puppet.objects.get(alignment=ALIGNMENT_EVIL)
+    
+    def test_valid_value(self):
+        self.evil_puppet.secret_lover = self.good_puppet
+        self.evil_puppet.full_clean()
+        
+        self.evil_puppet.save()
+        self.assertEqual(self.good_puppet.secretly_loves_me,
+                         self.evil_puppet)
+        
+        self.good_puppet.secret_lover = self.evil_puppet
+        self.good_puppet.full_clean()
+        
+    def test_invalid_value(self):
+        self.evil_puppet.secret_lover = self.good_puppet
+        self.evil_puppet.save()
+        
+        # narcissus style
+        self.good_puppet.secret_lover = self.good_puppet
+        self.failUnlessRaises(ValidationError, self.good_puppet.full_clean,
+                              """Since the evil puppet secretly loves the good puppet
+                              the good puppet can only secretly love the bad puppet.""")
 
 class AdminTest(TestCase):
     

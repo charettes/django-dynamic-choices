@@ -3,7 +3,8 @@ from django.db.models.query import EmptyQuerySet
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
 
-from dynamic_choices.db.models import DynamicChoicesForeignKey, DynamicChoicesManyToManyField
+from dynamic_choices.db.models import (DynamicChoicesForeignKey, DynamicChoicesManyToManyField,
+    DynamicOneToOneField)
 
 ALIGNMENT_EVIL = 0
 ALIGNMENT_GOOD = 1
@@ -33,9 +34,9 @@ class Puppet(models.Model):
     
     alignment = models.SmallIntegerField(choices=ALIGNMENTS)
     master = DynamicChoicesForeignKey(Master, choices=same_alignment)
-    secret_lover = DynamicChoicesForeignKey('self', choices='choices_for_secret_lover',
-                                            related_name='secret_lover_set',
-                                            blank=True, null=True)
+    secret_lover = DynamicOneToOneField('self', choices='choices_for_secret_lover',
+                                        related_name='secretly_loves_me',
+                                        blank=True, null=True)
     friends = DynamicChoicesManyToManyField('self', choices='choices_for_friends', blank=True, null=True)
     enemies = DynamicChoicesManyToManyField('self', through='Enemy', symmetrical=False, blank=True, null=True)
     
@@ -53,6 +54,14 @@ class Puppet(models.Model):
                     )
     
     def choices_for_secret_lover(self, queryset):
+        if self.pk:
+            try:
+                secretly_loves_me_qs = queryset.filter(secret_lover=self.pk)
+                secretly_loves_me_qs.get()
+            except (Puppet.DoesNotExist, Puppet.MultipleObjectsReturned):
+                pass
+            else:
+                return secretly_loves_me_qs
         return queryset
     
     def __unicode__(self):

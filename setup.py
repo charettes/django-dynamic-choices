@@ -19,7 +19,7 @@ setup(
     url=github_url,
     author='Simon Charette',
     author_email='charette.s@gmail.com',
-    install_requires=[
+    requires=[
         'Django>=1.2.5',
     ],
     packages=find_packages(exclude=['testapp']),

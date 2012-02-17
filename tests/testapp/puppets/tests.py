@@ -2,7 +2,6 @@
 import django
 from django.core.exceptions import FieldError, ValidationError
 from django.db.models import Model
-from django.db.models.query import EmptyQuerySet
 from django.test import TestCase
 from django.test.client import Client
 from django.utils import simplejson
@@ -13,6 +12,7 @@ from dynamic_choices.forms.fields import (DynamicModelMultipleChoiceField,
     DynamicModelChoiceField)
 
 from models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
+
 
 class DynamicForeignKeyTest(TestCase):
     
@@ -68,7 +68,7 @@ class DynamicAdminFormTest(AdminTest):
         self.assertEqual(list(queryset), list(field.widget.choices.queryset), msg)
             
     def assertEmptyChoices(self, field, msg=None):
-        return self.assertChoices(EmptyQuerySet(), field, msg=msg)
+        return self.assertChoices((), field, msg=msg)
     
     # Django <= 1.2 doesn't have assertIsIntance
     if django.VERSION[0] == 1 and django.VERSION[1] < 3:

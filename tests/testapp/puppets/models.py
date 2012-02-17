@@ -1,11 +1,11 @@
 
 from django.db import models
-from django.db.models.query import EmptyQuerySet
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
 
 from dynamic_choices.db.models import (DynamicChoicesForeignKey, DynamicChoicesManyToManyField,
     DynamicChoicesOneToOneField)
+
 
 ALIGNMENT_EVIL = 0
 ALIGNMENT_GOOD = 1
@@ -83,7 +83,7 @@ class Enemy(models.Model):
             Filter our enemies
         """
         if puppet__alignment is None:
-            return EmptyQuerySet()
+            return queryset.none()
         else:
             choices = []
             for alignment in ALIGNMENTS:

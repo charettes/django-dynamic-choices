@@ -20,7 +20,7 @@ setup(
     author='Simon Charette',
     author_email='charette.s@gmail.com',
     requires=[
-        'Django>=1.2.5',
+        'Django>=1.2.7',
     ],
     packages=find_packages(exclude=['testapp']),
     include_package_data=True,

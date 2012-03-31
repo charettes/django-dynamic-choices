@@ -293,7 +293,15 @@ def dynamic_admin_factory(admin_cls):
                         initial[k] = v.split(",")
                     else:
                         initial[k] = v
-            for formset, inline in zip(super(cls, self).get_formsets(request, obj), self.inline_instances):
+                        
+            try:
+                # Django >= 1.4
+                inline_instances = self.get_inline_instances(request)
+            except AttributeError:
+                # Django < 1.4
+                inline_instances = self.inline_instances
+            
+            for formset, inline in zip(super(cls, self).get_formsets(request, obj), inline_instances):
                 fk = _get_foreign_key(self.model, inline.model, fk_name=inline.fk_name).name
                 fk_initial = dict(('%s__%s' % (fk, k),v) for k, v in initial.iteritems())
                 # If we must provide additional data

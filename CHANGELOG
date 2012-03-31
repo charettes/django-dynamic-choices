@@ -2,6 +2,11 @@
 django-dynamic-choices changelog
 ============================
 
+Version 0.2.0, 31 Marc 2012:
+--------------------------------
+* dropped django 1.2.X support
+* added django 1.4.X support
+
 Version 0.1.8, 17 August 2011:
 --------------------------------
 * added DynamicChoicesOneToOneField.

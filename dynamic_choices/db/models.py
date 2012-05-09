@@ -10,9 +10,10 @@ from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
 
-from dynamic_choices.db.query import dynamic_queryset_factory, unionize_querysets
+from dynamic_choices.db.query import dynamic_queryset_factory
 from dynamic_choices.forms.fields import (DynamicModelChoiceField,
     DynamicModelMultipleChoiceField)
+
 
 class DynamicChoicesField(object):
     
@@ -204,9 +205,7 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
     
     def validate(self, value, model_instance):
         if self.has_choices_callback:
-            if self.rel.parent_link:
-                return
-            if value is None:
+            if self.rel.parent_link or value is None:
                 return
             
             data = model_to_dict(model_instance)
@@ -215,7 +214,7 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
                     data[field.name] = getattr(model_instance, field.name)
                 except field.rel.to.DoesNotExist:
                     pass
-            if model_instance.id:
+            if model_instance.pk:
                 for m2m in model_instance._meta.many_to_many:
                     data[m2m.name] = getattr(model_instance, m2m.name).all()
             
@@ -223,14 +222,15 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
             qs = qs.complex_filter(self.rel.limit_choices_to)
             
             dcqs = self._invoke_choices_callback(model_instance, qs, data)
-            # If a tuple is provided we must build
-            # a new Queryset by combining group's ones
+
+            # If a tuple is provided we must validate that at least one 
+            # QuerySet contains the selected choice
             if isinstance(dcqs, tuple):
-                qs = qs and unionize_querysets(q[1] for q in dcqs)
+                exists = any(group[1].exists() for group in dcqs)
             else:
-                qs = dcqs
+                exists = dcqs.exists()
             
-            if not qs.exists():
+            if not exists:
                 raise exceptions.ValidationError(self.error_messages['invalid'] % {
                     'model': self.rel.to._meta.verbose_name, 'pk': value})
         else:

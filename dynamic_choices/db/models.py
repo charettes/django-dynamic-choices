@@ -10,8 +10,8 @@ from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
 
-from dynamic_choices.db.query import dynamic_queryset_factory
-from dynamic_choices.forms.fields import (DynamicModelChoiceField,
+from .query import dynamic_queryset_factory
+from ..forms.fields import (DynamicModelChoiceField,
     DynamicModelMultipleChoiceField)
 
 

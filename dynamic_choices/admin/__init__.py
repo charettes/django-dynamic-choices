@@ -19,8 +19,9 @@ from django.utils.encoding import force_unicode
 from django.utils.functional import Promise, update_wrapper
 from django.utils.safestring import SafeUnicode
 
-from dynamic_choices.forms import DynamicModelForm, dynamic_model_form_factory
-from dynamic_choices.forms.fields import DynamicModelChoiceField
+from ..forms import DynamicModelForm, dynamic_model_form_factory
+from ..forms.fields import DynamicModelChoiceField
+
 
 try:
     static_url = settings.STATIC_URL

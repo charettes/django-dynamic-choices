@@ -3,15 +3,15 @@ import operator
 from django.db.models.query import EmptyQuerySet, QuerySet
 
 
-class EmptyDynamicChoicesQueryset(EmptyQuerySet):
+class EmptyDynamicChoicesQuerySet(EmptyQuerySet):
     
     def filter_for_instance(self):
         return self
 
-class DynamicChoicesQueryset(QuerySet):
+class DynamicChoicesQuerySet(QuerySet):
     
     def _clone(self, *args, **kwargs):
-        clone = super(DynamicChoicesQueryset, self)._clone(*args, **kwargs)
+        clone = super(DynamicChoicesQuerySet, self)._clone(*args, **kwargs)
         clone._field = self._field
         return clone
         
@@ -19,11 +19,11 @@ class DynamicChoicesQueryset(QuerySet):
         return self._field._invoke_choices_callback(instance, self, data)
     
     def none(self):
-        return self._clone(klass=EmptyDynamicChoicesQueryset)
+        return self._clone(klass=EmptyDynamicChoicesQuerySet)
 
 def dynamic_queryset_factory(queryset, field):
     
-    clone = queryset._clone(DynamicChoicesQueryset)
+    clone = queryset._clone(DynamicChoicesQuerySet)
     clone._field = field
     
     return clone

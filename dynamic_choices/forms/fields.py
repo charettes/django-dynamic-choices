@@ -3,7 +3,7 @@ from django.forms.fields import ChoiceField
 from django.forms.models import (ModelChoiceField, ModelChoiceIterator,
     ModelMultipleChoiceField)
     
-from ..db.query import DynamicChoicesQuerySet, unionize_querysets
+from ..db.query import CompositeQuerySet, DynamicChoicesQuerySet
 
 
 class GroupedModelChoiceIterator(ModelChoiceIterator):
@@ -42,7 +42,7 @@ class DynamicModelChoiceField(ModelChoiceField):
             queryset = queryset.filter_for_instance(self._instance, self._data)
             if isinstance(queryset, tuple):
                 self._groups = queryset
-                queryset = unionize_querysets(q[1] for q in queryset)
+                queryset = CompositeQuerySet(q[1] for q in queryset)
         self._queryset = queryset
         self.widget.choices = self.choices
 

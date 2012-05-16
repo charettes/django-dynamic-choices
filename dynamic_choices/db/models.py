@@ -10,7 +10,7 @@ from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
 
-from .query import dynamic_queryset_factory
+from .query import CompositeQuerySet, dynamic_queryset_factory
 from ..forms.fields import (DynamicModelChoiceField,
     DynamicModelMultipleChoiceField)
 
@@ -226,11 +226,9 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
             # If a tuple is provided we must validate that at least one 
             # QuerySet contains the selected choice
             if isinstance(dcqs, tuple):
-                exists = any(group[1].exists() for group in dcqs)
-            else:
-                exists = dcqs.exists()
+                dcqs = CompositeQuerySet(qs[1] for qs in dcqs)
             
-            if not exists:
+            if not dcqs.exists():
                 raise exceptions.ValidationError(self.error_messages['invalid'] % {
                     'model': self.rel.to._meta.verbose_name, 'pk': value})
         else:

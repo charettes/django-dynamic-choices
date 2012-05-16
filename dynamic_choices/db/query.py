@@ -1,7 +1,48 @@
-import operator
+from itertools import chain
 
 from django.db.models.query import EmptyQuerySet, QuerySet
 
+
+class CompositeQuerySet(object):
+    """
+    A queryset like object composed of multiple querysets
+    """
+    
+    def __init__(self, querysets):
+        self._querysets = tuple(querysets)
+        self.model = self.querysets[0].model
+        assert all(qs.model == self.model for qs in self.querysets[1:]), \
+            'All querysets must be of the same model'
+    
+    @property
+    def querysets(self):
+        return self._querysets
+    
+    def __iter__(self):
+        return chain(*self.querysets)
+    
+    def get(self, *args, **kwargs):
+        for qs in self.querysets:
+            try:
+                obj = qs.get(*args, **kwargs)
+            except self.model.DoesNotExist:
+                pass
+            else:
+                return obj
+        raise self.model.DoesNotExist
+    
+    def _compose(self, method, *args, **kwargs):
+        return self.__class__(getattr(qs, method)(*args, **kwargs)
+                                for qs in self.querysets)
+    
+    def filter(self, *args, **kwargs):
+        return self._compose('filter', *args, **kwargs)
+    
+    def distinct(self):
+        return self._compose('distinct')
+    
+    def exists(self):
+        return any(qs.exists() for qs in self.querysets)
 
 class EmptyDynamicChoicesQuerySet(EmptyQuerySet):
     
@@ -27,10 +68,3 @@ def dynamic_queryset_factory(queryset, field):
     clone._field = field
     
     return clone
-
-def unionize_querysets(querysets):
-    """
-    Combine querysets in a way that results
-    from every queryset in joined together
-    """
-    return reduce(operator.or_, querysets)

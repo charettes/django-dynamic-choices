@@ -129,7 +129,7 @@ def dynamic_admin_factory(admin_cls):
     
     change_form_template = 'admin/dynamic_choices/change_form.html'
     
-    class meta_cls(admin_cls.__metaclass__):
+    class meta_cls(type(admin_cls)):
         "Metaclass that ensure form and inlines are dynamic"
         def __new__(cls, name, bases, attrs):
             # If there's already a form defined we make sure to subclass it

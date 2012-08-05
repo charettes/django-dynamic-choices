@@ -5,13 +5,12 @@ python:
   - 2.7
 
 env:
-  - DJANGO="django==1.3.1"
-  - DJANGO="django==1.4"
+  - DJANGO="django>=1.3,<1.4"
+  - DJANGO="django>=1.4,<1.5"
   - DJANGO="https://github.com/django/django/tarball/master"
 
 install:
   - pip install $DJANGO --use-mirrors
 
 script:
-  - cd tests/testapp
-  - python manage.py test puppets
+  - ./runtests.py

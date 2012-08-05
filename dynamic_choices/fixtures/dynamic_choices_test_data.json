@@ -1,21 +1,21 @@
 [
   {
     "pk": 1, 
-    "model": "puppets.master", 
+    "model": "dynamic_choices.master", 
     "fields": {
       "alignment": 1
     }
   }, 
   {
     "pk": 2, 
-    "model": "puppets.master", 
+    "model": "dynamic_choices.master", 
     "fields": {
       "alignment": 0
     }
   }, 
   {
     "pk": 1, 
-    "model": "puppets.puppet", 
+    "model": "dynamic_choices.puppet", 
     "fields": {
       "friends": [], 
       "master": 1, 
@@ -24,7 +24,7 @@
   }, 
   {
     "pk": 2, 
-    "model": "puppets.puppet", 
+    "model": "dynamic_choices.puppet", 
     "fields": {
       "friends": [], 
       "master": 2, 
@@ -33,7 +33,7 @@
   },
   {
     "pk": 1, 
-    "model": "puppets.enemy", 
+    "model": "dynamic_choices.enemy", 
     "fields": {
       "enemy": 2, 
       "since": "2010-12-12", 

@@ -120,14 +120,6 @@ class DynamicAdminFormTest(AdminTest):
     def assertEmptyChoices(self, field, msg=None):
         return self.assertChoices((), field, msg=msg)
 
-    if django.VERSION[0:2] <= (1, 2):
-        def assertIsInstance(self, obj, cls, msg=None):
-            """Same as self.assertTrue(isinstance(obj, cls)), with a nicer
-            default message."""
-            if not isinstance(obj, cls):
-                standardMsg = '%s is not an instance of %r' % (repr(obj), cls)
-                self.fail(self._formatMessage(msg, standardMsg))
-
     def test_GET_add(self):
         response = self.client.get('/admin/dynamic_choices/puppet/add/', follow=True)
         adminform = response.context['adminform']

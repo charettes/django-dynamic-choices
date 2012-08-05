@@ -24,14 +24,6 @@ from ..forms import DynamicModelForm, dynamic_model_form_factory
 from ..forms.fields import DynamicModelChoiceField
 
 
-try:
-    static_url = settings.STATIC_URL
-except AttributeError:
-    try:
-        static_url = settings.MEDIA_URL
-    except AttributeError:
-        static_url = ''
-
 class LazyEncoder(simplejson.JSONEncoder):
     """
         Encoder used for 
@@ -164,8 +156,8 @@ def dynamic_admin_factory(admin_cls):
     
         def _media(self):
             media = super(cls, self)._media()
-            media.add_js(["%sjs/dynamic-choices.js" % static_url,
-                          "%sjs/dynamic-choices-admin.js" % static_url])
+            media.add_js(('js/dynamic-choices.js',
+                          'js/dynamic-choices-admin.js'))
             return media
         media = property(_media)
     

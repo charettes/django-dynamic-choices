@@ -2,7 +2,7 @@
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.util import unquote
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.forms.formsets import BaseFormSet
@@ -12,6 +12,7 @@ from django.forms.widgets import Select, SelectMultiple
 from django.http import Http404, HttpResponseBadRequest, HttpResponse
 from django.template.base import TemplateDoesNotExist
 from django.template.defaultfilters import escape
+from django.template.base import FilterExpression
 from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode
 from django.utils import simplejson
@@ -109,19 +110,19 @@ def dynamic_inline_factory(inline_cls):
     cls.__name__ = "Dynamic%s" % inline_cls.__name__
     return cls
 
-def template_extends(template, expected_parent_name):
-    try:
-        tpl = get_template(template)
-    except TemplateDoesNotExist:
-        return False
-    
-    if (len(tpl.nodelist) and
-        isinstance(tpl.nodelist[0], ExtendsNode)):
-        node = tpl.nodelist[0]
-        if node.parent_name == expected_parent_name:
+def template_extends(template_name, expected_parent_name):
+    template = get_template(template_name)
+    if (len(template.nodelist) and
+        isinstance(template.nodelist[0], ExtendsNode)):
+        node = template.nodelist[0]
+        parent_name = node.parent_name
+        # As of django 1.4, parent_name is a FilterExpression
+        if isinstance(parent_name, FilterExpression):
+            parent_name = parent_name.resolve({})
+        if parent_name == expected_parent_name:
             return True
         else:
-            return template_extends(node.parent_name, expected_parent_name)
+            return template_extends(parent_name, expected_parent_name)
     else:
         return False
 
@@ -140,12 +141,13 @@ def dynamic_admin_factory(admin_cls):
             
             # Make sure the specified add|change_form_template
             # extends "admin/dynamic_choices/change_form.html"
-            for t, default in {'add_form_template': None, 'change_form_template': change_form_template}.iteritems():
+            for t, default in {'add_form_template': None,
+                               'change_form_template': change_form_template}.iteritems():
                 if t in attrs:
                     if not template_extends(attrs[t], change_form_template):
-                        raise Exception("Make sure specified %s.%s='%s' template extends '%s' "
-                                        "in order to enabled DynamicAdmin" % (name, t, attrs[t],
-                                                                              change_form_template))
+                        raise ImproperlyConfigured("Make sure specified %s.%s='%s' template extends '%s' "
+                                                   "in order to enable DynamicAdmin" % (name, t, attrs[t],
+                                                                                        change_form_template))
                 else:
                     attrs[t] = default
             

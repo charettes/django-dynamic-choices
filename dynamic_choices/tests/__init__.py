@@ -1,9 +1,11 @@
+from contextlib import contextmanager
+import os
 
 import django
 from django import forms
 from django.conf import settings
-#from django.contrib import admin
-from django.core.exceptions import FieldError, ValidationError
+from django.core.exceptions import (FieldError, ImproperlyConfigured,
+    ValidationError)
 from django.core.urlresolvers import reverse
 from django.db.models import Model
 from django.test import TestCase
@@ -19,6 +21,8 @@ from dynamic_choices.forms.fields import (DynamicModelMultipleChoiceField,
 from .admin import PuppetAdmin
 from .models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
 
+
+MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class DynamicForeignKeyTest(TestCase):
     fixtures = ('dynamic_choices_test_data',)
@@ -61,6 +65,45 @@ class DynamicOneToOneField(TestCase):
                               the good puppet can only secretly love the bad puppet.""")
 
 
+class ImproperlyConfiguredAmin(TestCase):
+    if django.VERSION[0:2] <= (1, 3):
+        @contextmanager
+        def settings(self, **kwargs):
+            original = {}
+            try:
+                for key, value in kwargs.iteritems():
+                    original[key] = getattr(settings, key)
+                    setattr(settings, key, value)
+                yield
+            finally:
+                for key, value in original.iteritems():
+                    setattr(settings, key, value)
+
+    def test_add_change_templates(self):
+        """
+        Make sure ImproperlyConfigured exceptions are raised when a
+        `DynamicAdmin` subclass defines a `add_form_template` or
+        `change_form_template` which do not extends
+        `admin/dynamic_choices/change_form.html`.
+        """
+        TEMPLATE_LOADERS = (
+            'django.template.loaders.filesystem.Loader',
+            'django.template.loaders.app_directories.Loader',
+        )
+        TEMPLATE_DIRS = (
+            os.path.join(MODULE_PATH, 'templates'),
+        )
+        with self.settings(TEMPLATE_LOADERS=TEMPLATE_LOADERS,
+                           TEMPLATE_DIRS=TEMPLATE_DIRS):
+            with self.assertRaises(ImproperlyConfigured):
+                type('ChangeFormDoNotExtends', (DynamicAdmin,),
+                     {'change_form_template': 'dynamic_choices_tests/do_not_extends_change_form.html'})
+            # Simple inheritance should work
+            type('ChangeFormExtends', (DynamicAdmin,),
+                 {'change_form_template': 'dynamic_choices_tests/extends_change_form.html'})
+            type('ChangeFormExtendsChild', (DynamicAdmin,),
+                 {'change_form_template': 'dynamic_choices_tests/extends_change_form_twice.html'})
+
 class AdminTest(TestCase):
     urls = 'dynamic_choices.tests.urls'
     fixtures = ('dynamic_choices_test_data', 'dynamic_choices_admin_test_data')
@@ -77,8 +120,7 @@ class DynamicAdminFormTest(AdminTest):
     def assertEmptyChoices(self, field, msg=None):
         return self.assertChoices((), field, msg=msg)
 
-    # Django <= 1.2 doesn't have assertIsIntance
-    if django.VERSION[0] == 1 and django.VERSION[1] < 3:
+    if django.VERSION[0:2] <= (1, 2):
         def assertIsInstance(self, obj, cls, msg=None):
             """Same as self.assertTrue(isinstance(obj, cls)), with a nicer
             default message."""

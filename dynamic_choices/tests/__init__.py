@@ -79,12 +79,11 @@ class ImproperlyConfiguredAmin(TestCase):
                 for key, value in original.iteritems():
                     setattr(settings, key, value)
 
-    def test_add_change_templates(self):
+    def test_change_form_template_override(self):
         """
         Make sure ImproperlyConfigured exceptions are raised when a
-        `DynamicAdmin` subclass defines a `add_form_template` or
-        `change_form_template` which do not extends
-        `admin/dynamic_choices/change_form.html`.
+        `DynamicAdmin` subclass defines a `change_form_template` which do not
+        extends `admin/dynamic_choices/change_form.html`.
         """
         TEMPLATE_LOADERS = (
             'django.template.loaders.filesystem.Loader',
@@ -98,11 +97,22 @@ class ImproperlyConfiguredAmin(TestCase):
             with self.assertRaises(ImproperlyConfigured):
                 type('ChangeFormDoNotExtends', (DynamicAdmin,),
                      {'change_form_template': 'dynamic_choices_tests/do_not_extends_change_form.html'})
-            # Simple inheritance should work
-            type('ChangeFormExtends', (DynamicAdmin,),
-                 {'change_form_template': 'dynamic_choices_tests/extends_change_form.html'})
-            type('ChangeFormExtendsChild', (DynamicAdmin,),
-                 {'change_form_template': 'dynamic_choices_tests/extends_change_form_twice.html'})
+            try:
+                type('ChangeFormExtends', (DynamicAdmin,),
+                     {'change_form_template': 'dynamic_choices_tests/extends_change_form.html'})
+            except ImproperlyConfigured:
+                self.fail('Overriding the `change_form_template` on a '
+                          '`DynamicAdmin` subclass should work when the '
+                          'specified template extends "admin/dynamic_choices/change_form.html"')
+            try:
+                type('ChangeFormExtendsChild', (DynamicAdmin,),
+                     {'change_form_template': 'dynamic_choices_tests/extends_change_form_twice.html'})
+            except ImproperlyConfigured:
+                self.fail('Overriding the `change_form_template` on a '
+                          '`DynamicAdmin` subclass should work when the '
+                          'specified template extends "admin/dynamic_choices/change_form.html" '
+                          'indirectly.')
+
 
 class AdminTest(TestCase):
     urls = 'dynamic_choices.tests.urls'

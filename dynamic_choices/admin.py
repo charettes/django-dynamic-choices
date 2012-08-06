@@ -1,5 +1,6 @@
 import json
 
+from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
@@ -157,10 +158,6 @@ def dynamic_admin_factory(admin_cls):
         media = property(_media)
     
         def get_urls(self):
-            # Inspired by
-            # https://github.com/django-extensions/django-extensions/blob/master/django_extensions/admin/__init__.py
-            from django.conf.urls.defaults import patterns, url
-    
             def wrap(view):
                 def wrapper(*args, **kwargs):
                     return self.admin_site.admin_view(view)(*args, **kwargs)

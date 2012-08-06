@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import json
 import os
 
 import django
@@ -10,7 +11,6 @@ from django.core.urlresolvers import reverse
 from django.db.models import Model
 from django.test import TestCase
 from django.test.client import Client
-from django.utils import simplejson
 
 from dynamic_choices.admin import DynamicAdmin
 from dynamic_choices.db.models import DynamicChoicesForeignKey
@@ -235,8 +235,8 @@ class AdminChoicesTest(AdminTest):
         }
         response = self.client.get('/admin/dynamic_choices/puppet/1/choices/', data)
         self.assertEqual(response.status_code, 200)
-        json = simplejson.loads(response.content)
-        self.assertEqual(json['enemy_set-0-because_of']['value'],
+        data = json.loads(response.content)
+        self.assertEqual(data['enemy_set-0-because_of']['value'],
                          [['', '---------']])
 
     def test_empty_form(self):
@@ -249,8 +249,8 @@ class AdminChoicesTest(AdminTest):
         }
         response = self.client.get('/admin/dynamic_choices/puppet/1/choices/', data)
         self.assertEqual(response.status_code, 200)
-        json = simplejson.loads(response.content)
-        self.assertEqual(json['enemy_set-__prefix__-enemy']['value'],
+        data = json.loads(response.content)
+        self.assertEqual(data['enemy_set-__prefix__-enemy']['value'],
                          [
                            ['', '---------'],
                            ['Evil', [[2, 'Evil puppet (2)'],]],

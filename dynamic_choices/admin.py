@@ -1,3 +1,4 @@
+import json
 
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -10,7 +11,6 @@ from django.template.defaultfilters import escape
 from django.template.base import FilterExpression
 from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode
-from django.utils import simplejson
 from django.utils.encoding import force_unicode
 from django.utils.functional import Promise, update_wrapper
 from django.utils.safestring import SafeUnicode
@@ -19,7 +19,7 @@ from .forms import DynamicModelForm, dynamic_model_form_factory
 from .forms.fields import DynamicModelChoiceField
 
 
-class LazyEncoder(simplejson.JSONEncoder):
+class LazyEncoder(json.JSONEncoder):
     """
         Encoder used for 
     """
@@ -226,8 +226,8 @@ def dynamic_admin_factory(admin_cls):
                 for field, bindeds in inline_fields.iteritems():
                     inlines[fieldset][field] = list(bindeds)
                 
-            return SafeUnicode(u"django.dynamicAdmin(%s, %s);" % (simplejson.dumps(fields),
-                                                                  simplejson.dumps(inlines)))
+            return SafeUnicode(u"django.dynamicAdmin(%s, %s);" % (json.dumps(fields),
+                                                                  json.dumps(inlines)))
         
         def dynamic_choices(self, request, object_id=None):
                     

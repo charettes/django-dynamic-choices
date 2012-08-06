@@ -1,8 +1,8 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python
 from setuptools import setup, find_packages
 
 from dynamic_choices import VERSION
+
 
 github_url = 'https://github.com/charettes/django-dynamic-choices'
 long_desc = '''

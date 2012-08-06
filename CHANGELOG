@@ -2,9 +2,10 @@
 django-dynamic-choices changelog
 ============================
 
-Version 0.2.1
+Version 0.3.0, 6 august 2012
 --------------------------------
 * Simplified grouped queryset validation
+* Added tested support for 1.4.X
 
 Version 0.2.0, 31 March 2012:
 --------------------------------

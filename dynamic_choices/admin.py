@@ -150,7 +150,7 @@ def dynamic_admin_factory(admin_cls):
         __metaclass__ = meta_cls
     
         def _media(self):
-            media = super(cls, self)._media()
+            media = super(cls, self).media
             media.add_js(('js/dynamic-choices.js',
                           'js/dynamic-choices-admin.js'))
             return media

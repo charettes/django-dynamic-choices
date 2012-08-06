@@ -223,14 +223,26 @@ class DynamicAdminFormTest(AdminTest):
 
 
 class AdminChoicesTest(AdminTest):
-    def test_fk_as_empty_string(self):
-        """Make sure fk specified as empty string are parsed correctly"""
-        data = {
-            'alignment': '',
-            'enemy_set-TOTAL_FORMS': 3,
+    def _get_choices(self, data=None):
+        default = {
+            'enemy_set-TOTAL_FORMS': 0,
             'enemy_set-INITIAL_FORMS': 0,
         }
-        response = self.client.get('/admin/dynamic_choices/puppet/1/choices/', data)
+        if data:
+            default.update(data)
+        return self.client.get('/admin/dynamic_choices/puppet/1/choices/',
+                               default)
+
+    def test_medias_presence(self):
+        """Make sure extra js files are present in the response"""
+        response = self.client.get('/admin/dynamic_choices/puppet/1/')
+        self.assertIn('js/dynamic-choices.js', response.content)
+        self.assertIn('js/dynamic-choices-admin.js', response.content)
+
+    def test_fk_as_empty_string(self):
+        """Make sure fk specified as empty string are parsed correctly"""
+        data = {'alignment': ''}
+        response = self._get_choices(data)
         self.assertEquals(200, response.status_code,
                           'Empty string fk shouldn\'t be cast as int')
 
@@ -243,7 +255,7 @@ class AdminChoicesTest(AdminTest):
             'enemy_set-TOTAL_FORMS': 3,
             'enemy_set-INITIAL_FORMS': 1
         }
-        response = self.client.get('/admin/dynamic_choices/puppet/1/choices/', data)
+        response = self._get_choices(data)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEqual(data['enemy_set-0-because_of']['value'],
@@ -253,11 +265,9 @@ class AdminChoicesTest(AdminTest):
         """Make sure data is provided for an empty form"""
         data = {
             'DYNAMIC_CHOICES_FIELDS': 'enemy_set-__prefix__-enemy',
-            'alignment': 1,
-            'enemy_set-TOTAL_FORMS': 0,
-            'enemy_set-INITIAL_FORMS': 0
+            'alignment': 1
         }
-        response = self.client.get('/admin/dynamic_choices/puppet/1/choices/', data)
+        response = self._get_choices(data)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEqual(data['enemy_set-__prefix__-enemy']['value'],

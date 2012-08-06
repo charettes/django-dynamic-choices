@@ -1,16 +1,11 @@
 
-from django.conf import settings
 from django.contrib import admin
-from django.contrib.admin.util import unquote
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.db.models.sql.constants import LOOKUP_SEP
-from django.forms.formsets import BaseFormSet
-from django.forms.models import (_get_foreign_key, model_to_dict, ModelForm,
-    modelform_factory)
+from django.forms.models import _get_foreign_key, model_to_dict, ModelForm
 from django.forms.widgets import Select, SelectMultiple
 from django.http import Http404, HttpResponseBadRequest, HttpResponse
-from django.template.base import TemplateDoesNotExist
 from django.template.defaultfilters import escape
 from django.template.base import FilterExpression
 from django.template.loader import get_template
@@ -20,8 +15,8 @@ from django.utils.encoding import force_unicode
 from django.utils.functional import Promise, update_wrapper
 from django.utils.safestring import SafeUnicode
 
-from ..forms import DynamicModelForm, dynamic_model_form_factory
-from ..forms.fields import DynamicModelChoiceField
+from .forms import DynamicModelForm, dynamic_model_form_factory
+from .forms.fields import DynamicModelChoiceField
 
 
 class LazyEncoder(simplejson.JSONEncoder):

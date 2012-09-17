@@ -6,9 +6,13 @@ from django.db.models import ForeignKey, ManyToManyField, OneToOneField
 from django.db.models.base import Model
 from django.db.models.fields import FieldDoesNotExist, Field
 from django.db.models.fields.related import add_lazy_relation
-from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
+
+try:
+    from django.db.models.constants import LOOKUP_SEP
+except ImportError:
+    from django.db.models.sql.constants import LOOKUP_SEP
 
 from .query import CompositeQuerySet, dynamic_queryset_factory
 from ..forms.fields import (DynamicModelChoiceField,

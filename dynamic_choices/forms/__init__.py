@@ -1,7 +1,11 @@
 
 from django.forms.models import ModelForm
 from django.db.models.fields.related import ManyToManyField
-from django.db.models.sql.constants import LOOKUP_SEP
+
+try:
+    from django.db.models.constants import LOOKUP_SEP
+except ImportError:
+    from django.db.models.sql.constants import LOOKUP_SEP
 
 from .fields import (DynamicModelChoiceField,
     DynamicModelMultipleChoiceField)

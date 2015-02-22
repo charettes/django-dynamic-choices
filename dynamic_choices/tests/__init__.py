@@ -59,9 +59,10 @@ class DynamicOneToOneField(TestCase):
         self.evil_puppet.save()
         # narcissus style
         self.good_puppet.secret_lover = self.good_puppet
-        self.failUnlessRaises(ValidationError, self.good_puppet.full_clean,
-                              """Since the evil puppet secretly loves the good puppet
-                              the good puppet can only secretly love the bad puppet.""")
+        self.assertRaises(
+            ValidationError, self.good_puppet.full_clean,
+            "Since the evil puppet secretly loves the good puppet the good puppet can only secretly love the bad one."
+        )
 
 
 class ImproperlyConfiguredAmin(TestCase):

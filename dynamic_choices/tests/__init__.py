@@ -1,9 +1,6 @@
-from contextlib import contextmanager
 import json
 import os
 
-import django
-from django.conf import settings
 from django.core.exceptions import (FieldError, ImproperlyConfigured,
                                     ValidationError)
 from django.db.models import Model
@@ -66,19 +63,6 @@ class DynamicOneToOneField(TestCase):
 
 
 class ImproperlyConfiguredAmin(TestCase):
-    if django.VERSION[0:2] <= (1, 3):
-        @contextmanager
-        def settings(self, **kwargs):
-            original = {}
-            try:
-                for key, value in kwargs.iteritems():
-                    original[key] = getattr(settings, key)
-                    setattr(settings, key, value)
-                yield
-            finally:
-                for key, value in original.iteritems():
-                    setattr(settings, key, value)
-
     def test_change_form_template_override(self):
         """
         Make sure ImproperlyConfigured exceptions are raised when a

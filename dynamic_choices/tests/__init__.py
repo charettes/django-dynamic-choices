@@ -36,7 +36,7 @@ class DynamicForeignKeyTest(TestCase):
 
     def test_invalid_value(self):
         puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_EVIL)
-        self.failUnlessRaises(ValidationError, puppet.full_clean)
+        self.assertRaises(ValidationError, puppet.full_clean)
 
 
 class DynamicOneToOneField(TestCase):
@@ -177,7 +177,7 @@ class DynamicAdminFormTest(AdminTest):
                         'Inline form is not a subclass of DynamicModelForm')
         for form in enemies_inline.formset.forms:
             fields = form.fields
-            self.assertChoices(Puppet.objects.exclude(alignment=alignment), fields['enemy'], 
+            self.assertChoices(Puppet.objects.exclude(alignment=alignment), fields['enemy'],
                                "Since puppet alignment is 'Good' only not 'Good' puppets are valid choices for enemy field")
             self.assertEmptyChoices(fields['because_of'], 'Since no enemy is defined because_of choices should be empty')
 

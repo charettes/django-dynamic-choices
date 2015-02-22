@@ -1,6 +1,6 @@
 import json
 
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls.defaults import url
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
@@ -26,7 +26,7 @@ from .forms.fields import DynamicModelChoiceField
 
 class LazyEncoder(json.JSONEncoder):
     """
-        Encoder used for 
+        Encoder used for
     """
     def default(self, obj):
         if isinstance(obj, Promise):
@@ -70,13 +70,13 @@ def dynamic_formset_factory(fieldset_cls, initial):
                 except (ValueError, IndexError):
                     store.insert(i, initial)
             return super(cls, self)._construct_forms()
-        
+
         def _get_empty_form(self, **kwargs):
             defaults = {'initial': initial}
             defaults.update(kwargs)
             return super(cls, self)._get_empty_form(**defaults)
         empty_form = property(_get_empty_form)
-            
+
     cls.__name__ = "Dynamic%s" % fieldset_cls.__name__
     return cls
 
@@ -89,10 +89,10 @@ def dynamic_inline_factory(inline_cls):
         return inline_cls
     else:
         form_cls = dynamic_model_form_factory(form_cls)
-    
+
     class cls(inline_cls):
         form = form_cls
-        
+
         def get_formset(self, request, obj=None, **kwargs):
             formset = super(cls, self).get_formset(request, obj=None, **kwargs)
             if not isinstance(formset.form(), DynamicModelForm):
@@ -119,9 +119,9 @@ def template_extends(template_name, expected_parent_name):
         return False
 
 def dynamic_admin_factory(admin_cls):
-    
+
     change_form_template = 'admin/dynamic_choices/change_form.html'
-    
+
     class meta_cls(type(admin_cls)):
         "Metaclass that ensure form and inlines are dynamic"
         def __new__(cls, name, bases, attrs):
@@ -130,7 +130,7 @@ def dynamic_admin_factory(admin_cls):
                 attrs['form'] = dynamic_model_form_factory(attrs['form'])
             else:
                 attrs['form'] = DynamicModelForm
-            
+
             # Make sure the specified add|change_form_template
             # extends "admin/dynamic_choices/change_form.html"
             for t, default in {'add_form_template': None,
@@ -142,54 +142,54 @@ def dynamic_admin_factory(admin_cls):
                                                                                         change_form_template))
                 else:
                     attrs[t] = default
-            
+
             # If there's some inlines defined we make sure that their form is dynamic
             # see dynamic_inline_factory
             if 'inlines' in attrs:
                 attrs['inlines'] = [dynamic_inline_factory(inline_cls) for inline_cls in attrs['inlines']]
-            
+
             return super(meta_cls, cls).__new__(cls, name, bases, attrs)
-    
+
     class cls(admin_cls):
-        
+
         __metaclass__ = meta_cls
-    
+
         def _media(self):
             media = super(cls, self).media
             media.add_js(('js/dynamic-choices.js',
                           'js/dynamic-choices-admin.js'))
             return media
         media = property(_media)
-    
+
         def get_urls(self):
             def wrap(view):
                 def wrapper(*args, **kwargs):
                     return self.admin_site.admin_view(view)(*args, **kwargs)
                 return update_wrapper(wrapper, view)
-    
+
             info = self.model._meta.app_label, self.model._meta.module_name
-    
-            urlpatterns = patterns('',
+
+            urlpatterns = [
                 url(r'(?:add|(?P<object_id>\w+))/choices/$',
                     wrap(self.dynamic_choices),
                     name="%s_%s_dynamic_admin" % info),
-            ) + super(cls, self).get_urls()
-    
+            ] + super(cls, self).get_urls()
+
             return urlpatterns
 
         def get_dynamic_choices_binder(self, request):
-    
+
             id = lambda field: "[name='%s']" % field
             inline_field_selector = lambda fieldset, field: "[name^='%s-'][name$='-%s']" % (fieldset, field)
-            
+
             fields = {}
             def add_fields(to_fields, to_field, bind_fields):
                 if not (to_field in to_fields):
                     to_fields[to_field] = set()
                 to_fields[to_field].update(bind_fields)
-            
+
             app_name, model_name = self.model._meta.app_label, self.model._meta.module_name
-            
+
             # Use get_form in order to allow formfield override
             # We should create a fake request from referer but all this
             # hack will be fixed when the code is embed directly in the page
@@ -199,7 +199,7 @@ def dynamic_admin_factory(admin_cls):
                 field_name = rel.split(LOOKUP_SEP)[0]
                 if rel in form.fields:
                     add_fields(fields, id(field_name), [id(field) for field in rels[rel] if field in form.fields])
-                    
+
             inlines = {}
             for formset in self.get_formsets(request):
                 inline = {}
@@ -218,30 +218,30 @@ def dynamic_admin_factory(admin_cls):
                         add_fields(inline, rel, inline_rels[rel])
                 if len(inline):
                     inlines[prefix] = inline
-                  
-            # Replace sets in order to allow JSON serialization        
+
+            # Replace sets in order to allow JSON serialization
             for field, bindeds in fields.iteritems():
                 fields[field] = list(bindeds)
-                
+
             for fieldset, inline_fields in inlines.iteritems():
                 for field, bindeds in inline_fields.iteritems():
                     inlines[fieldset][field] = list(bindeds)
-                
+
             return SafeUnicode(u"django.dynamicAdmin(%s, %s);" % (json.dumps(fields),
                                                                   json.dumps(inlines)))
-        
+
         def dynamic_choices(self, request, object_id=None):
-                    
+
             opts = self.model._meta
             obj = self.get_object(request, object_id)
             # Make sure the specified object exists
             if object_id is not None and obj is None:
                 raise Http404(_('%(name)s object with primary key %(key)r does not exist.') % {
                               'name': force_unicode(opts.verbose_name), 'key': escape(object_id)})
-            
+
             form = self.get_form(request)(request.GET, instance=obj)
             data = get_dynamic_choices_from_form(form)
-    
+
             for formset in self.get_formsets(request, obj):
                 prefix = formset.get_default_prefix()
                 try:
@@ -251,15 +251,15 @@ def dynamic_admin_factory(admin_cls):
                     return HttpResponseBadRequest("Missing %s ManagementForm data" % prefix)
                 for form in forms:
                     data.update(get_dynamic_choices_from_form(form))
-                    
+
             if 'DYNAMIC_CHOICES_FIELDS' in request.GET:
                 fields = request.GET.get('DYNAMIC_CHOICES_FIELDS').split(',')
                 for field in data.keys():
                     if not (field in fields):
                         del data[field]
-            
+
             return HttpResponse(lazy_encoder.encode(data), mimetype='application/json')
-        
+
         # Make sure to pass request data to fieldsets
         # so they can use it to define choices
         def get_formsets(self, request, obj=None):
@@ -284,14 +284,14 @@ def dynamic_admin_factory(admin_cls):
                         initial[k] = v.split(",")
                     else:
                         initial[k] = v
-                        
+
             try:
                 # Django >= 1.4
                 inline_instances = self.get_inline_instances(request)
             except AttributeError:
                 # Django < 1.4
                 inline_instances = self.inline_instances
-            
+
             for formset, inline in zip(super(cls, self).get_formsets(request, obj), inline_instances):
                 fk = _get_foreign_key(self.model, inline.model, fk_name=inline.fk_name).name
                 fk_initial = dict(('%s__%s' % (fk, k),v) for k, v in initial.iteritems())
@@ -302,7 +302,7 @@ def dynamic_admin_factory(admin_cls):
                 if len(initial):
                     formset = dynamic_formset_factory(formset, fk_initial)
                 yield formset
-                
+
         def add_view(self, request, form_url='', extra_context=None):
             context = {'dynamic_choices_binder': self.get_dynamic_choices_binder(request)}
             context.update(extra_context or {})

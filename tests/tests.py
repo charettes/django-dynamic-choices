@@ -99,7 +99,6 @@ class ImproperlyConfiguredAmin(TestCase):
 
 
 class AdminTest(TestCase):
-    urls = 'dynamic_choices.tests.urls'
     fixtures = ('dynamic_choices_test_data', 'dynamic_choices_admin_test_data')
 
     def setUp(self):

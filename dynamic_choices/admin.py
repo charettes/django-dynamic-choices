@@ -1,6 +1,6 @@
 import json
+from functools import update_wrapper
 
-from django.conf.urls.defaults import url
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
@@ -12,11 +12,16 @@ from django.template.defaultfilters import escape
 from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode
 from django.utils.encoding import force_unicode
-from django.utils.functional import Promise, update_wrapper
+from django.utils.functional import Promise
 from django.utils.safestring import SafeUnicode
 
 from .forms import DynamicModelForm, dynamic_model_form_factory
 from .forms.fields import DynamicModelChoiceField
+
+try:
+    from django.conf.urls import url
+except ImportError:
+    from django.conf.urls.defaults import url
 
 try:
     from django.db.models.constants import LOOKUP_SEP

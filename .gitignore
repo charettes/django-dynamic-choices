@@ -10,3 +10,5 @@
 tests/testapp/static/*
 dist/*
 .coverage
+.tox
+django_dynamic_choices.egg-info

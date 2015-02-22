@@ -15,6 +15,7 @@ from django.utils.encoding import force_unicode
 from django.utils.functional import Promise
 from django.utils.safestring import SafeUnicode
 
+from .compat import get_model_name
 from .forms import DynamicModelForm, dynamic_model_form_factory
 from .forms.fields import DynamicModelChoiceField
 
@@ -181,7 +182,7 @@ def dynamic_admin_factory(admin_cls):
                     return self.admin_site.admin_view(view)(*args, **kwargs)
                 return update_wrapper(wrapper, view)
 
-            info = self.model._meta.app_label, self.model._meta.module_name
+            info = self.model._meta.app_label, get_model_name(self.model._meta)
 
             urlpatterns = [
                 url(r'(?:add|(?P<object_id>\w+))/choices/$',
@@ -206,7 +207,7 @@ def dynamic_admin_factory(admin_cls):
                     to_fields[to_field] = set()
                 to_fields[to_field].update(bind_fields)
 
-            model_name = self.model._meta.module_name
+            model_name = get_model_name(self.model._meta)
 
             # Use get_form in order to allow formfield override
             # We should create a fake request from referer but all this

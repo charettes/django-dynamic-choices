@@ -1,14 +1,7 @@
-*.pyc
-*.swp
-*.lock
-*.pid
-*.DS_Store
-.project
-.pydevproject
-.settings
 *.db
-tests/testapp/static/*
+*.pyc
 dist/*
 .coverage
 .tox
 django_dynamic_choices.egg-info
+build/*

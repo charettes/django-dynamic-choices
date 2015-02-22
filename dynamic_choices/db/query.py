@@ -60,10 +60,15 @@ class DynamicChoicesQuerySet(QuerySet):
         clone._field = self._field
         return clone
 
-    def filter_for_instance(self, instance, data):
-        return self._field._invoke_choices_callback(instance, self, data)
+    if django.VERSION >= (1, 6):
+        def filter_for_instance(self, instance, data):
+            if self.query.is_empty():
+                return self
+            return self._field._invoke_choices_callback(instance, self, data)
+    else:
+        def filter_for_instance(self, instance, data):
+            return self._field._invoke_choices_callback(instance, self, data)
 
-    if django.VERSION < (1, 6):
         def none(self):
             return self._clone(klass=EmptyDynamicChoicesQuerySet)
 

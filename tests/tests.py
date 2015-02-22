@@ -140,8 +140,7 @@ class DynamicAdminFormTest(AdminTest):
 
     def test_GET_add_with_defined_alignment(self):
         alignment = ALIGNMENT_GOOD
-        response = self.client.get('/admin/dynamic_choices/puppet/add/',
-                                   {'alignment': alignment}, follow=True)
+        response = self.client.get('/admin/dynamic_choices/puppet/add/', {'alignment': alignment}, follow=True)
         self.assertEqual(200, response.status_code, 'Cannot display add page')
         adminform = response.context['adminform']
         form = adminform.form

@@ -1,6 +1,7 @@
 import json
 from functools import update_wrapper
 
+import django
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
@@ -62,20 +63,33 @@ def get_dynamic_choices_from_form(form):
 
 def dynamic_formset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
-
-        def _construct_forms(self):
-            "Append initial data for every single form"
-            store = getattr(self, 'initial', None)
-            if store is None:
-                store = []
-                setattr(self, 'initial', store)
-            for i in xrange(self.total_form_count()):
-                try:
-                    actual = store[i]
-                    actual.update(initial)
-                except (ValueError, IndexError):
-                    store.insert(i, initial)
-            return super(cls, self)._construct_forms()
+        if django.VERSION >= (1, 6):
+            def __init__(self, *args, **kwargs):
+                super(cls, self).__init__(*args, **kwargs)
+                store = getattr(self, 'initial', None)
+                if store is None:
+                    store = []
+                    setattr(self, 'initial', store)
+                for i in xrange(self.total_form_count()):
+                    try:
+                        actual = store[i]
+                        actual.update(initial)
+                    except (ValueError, IndexError):
+                        store.insert(i, initial)
+        else:
+            def _construct_forms(self):
+                "Append initial data for every single form"
+                store = getattr(self, 'initial', None)
+                if store is None:
+                    store = []
+                    setattr(self, 'initial', store)
+                for i in xrange(self.total_form_count()):
+                    try:
+                        actual = store[i]
+                        actual.update(initial)
+                    except (ValueError, IndexError):
+                        store.insert(i, initial)
+                return super(cls, self)._construct_forms()
 
         @property
         def empty_form(self):

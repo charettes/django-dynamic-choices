@@ -273,10 +273,16 @@ class DefinitionValidationTest(TestCase):
     def test_method_definition(self):
         with self.assertRaises(FieldError):
             class MissingChoicesCallbackModel(Model):
-                field = DynamicChoicesForeignKey('self',
-                                                 choices='missing_method')
+                field = DynamicChoicesForeignKey('self', choices='missing_method')
+
+                class Meta:
+                    app_label = 'dynamic_choices'
         try:
             class CallableChoicesCallbackModel(Model):
                 field = DynamicChoicesForeignKey('self', choices=lambda qs: qs)
+
+                class Meta:
+                    app_label = 'dynamic_choices'
+
         except FieldError:
             self.fail('Defining a callable choices should work')

@@ -3,11 +3,9 @@ import json
 import os
 
 import django
-from django import forms
 from django.conf import settings
 from django.core.exceptions import (FieldError, ImproperlyConfigured,
-    ValidationError)
-from django.core.urlresolvers import reverse
+                                    ValidationError)
 from django.db.models import Model
 from django.test import TestCase
 from django.test.client import Client
@@ -16,13 +14,14 @@ from dynamic_choices.admin import DynamicAdmin
 from dynamic_choices.db.models import DynamicChoicesForeignKey
 from dynamic_choices.forms import DynamicModelForm
 from dynamic_choices.forms.fields import (DynamicModelMultipleChoiceField,
-    DynamicModelChoiceField)
+                                          DynamicModelChoiceField)
 
 from .admin import PuppetAdmin
 from .models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
 
 
 MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
+
 
 class DynamicForeignKeyTest(TestCase):
     fixtures = ('dynamic_choices_test_data',)
@@ -124,6 +123,7 @@ class AdminTest(TestCase):
 
 
 class DynamicAdminFormTest(AdminTest):
+
     def assertChoices(self, queryset, field, msg=None):
         self.assertEqual(list(queryset), list(field.widget.choices.queryset), msg)
 
@@ -145,13 +145,14 @@ class DynamicAdminFormTest(AdminTest):
         self.assertEmptyChoices(fields['master'], 'Since no alignment is defined master choices should be empty')
         self.assertEmptyChoices(fields['friends'], 'Since no alignment is defined friends choices should be empty')
         enemies_inline_form = enemies_inline.opts.form
-        self.assertTrue(issubclass(enemies_inline_form, DynamicModelForm) or \
+        self.assertTrue(issubclass(enemies_inline_form, DynamicModelForm) or
                         enemies_inline_form.__name__ == "Dynamic%s" % enemies_inline_form.__base__.__name__,
                         'Inline form is not a subclass of DynamicModelForm')
         for form in enemies_inline.formset.forms:
             fields = form.fields
             self.assertEmptyChoices(fields['enemy'], 'Since no alignment is defined enemy choices should be empty')
-            self.assertEmptyChoices(fields['because_of'], 'Since no enemy is defined because_of choices should be empty')
+            self.assertEmptyChoices(
+                fields['because_of'], 'Since no enemy is defined because_of choices should be empty')
 
     def test_GET_add_with_defined_alignment(self):
         alignment = ALIGNMENT_GOOD
@@ -172,14 +173,17 @@ class DynamicAdminFormTest(AdminTest):
         self.assertChoices(Puppet.objects.filter(alignment=alignment), fields['friends'],
                            "Since puppet alignment is 'Good' only 'Good' puppets are valid choices for friends field")
         enemies_inline_form = enemies_inline.opts.form
-        self.assertTrue(issubclass(enemies_inline_form, DynamicModelForm) or \
+        self.assertTrue(issubclass(enemies_inline_form, DynamicModelForm) or
                         enemies_inline_form.__name__ == "Dynamic%s" % enemies_inline_form.__base__.__name__,
                         'Inline form is not a subclass of DynamicModelForm')
         for form in enemies_inline.formset.forms:
             fields = form.fields
-            self.assertChoices(Puppet.objects.exclude(alignment=alignment), fields['enemy'],
-                               "Since puppet alignment is 'Good' only not 'Good' puppets are valid choices for enemy field")
-            self.assertEmptyChoices(fields['because_of'], 'Since no enemy is defined because_of choices should be empty')
+            self.assertChoices(
+                Puppet.objects.exclude(alignment=alignment), fields['enemy'],
+                "Since puppet alignment is 'Good' only not 'Good' puppets are valid choices for enemy field"
+            )
+            self.assertEmptyChoices(
+                fields['because_of'], 'Since no enemy is defined because_of choices should be empty')
 
     def test_POST_add(self):
         alignment = ALIGNMENT_GOOD
@@ -213,16 +217,19 @@ class DynamicAdminFormTest(AdminTest):
         self.assertEmptyChoices(response.context['inline_admin_formsets'][0].formset.forms[1].fields['because_of'],
                                 'Enemy is only specified for the first inline, second one because_of should be empty')
 
-    #TODO: Add test_(GET & POST)_edit testcases
+    # TODO: Add test_(GET & POST)_edit testcases
 
     def test_user_defined_forms(self):
         self.assertTrue(issubclass(PuppetAdmin.form, DynamicModelForm),
                         'User defined forms should be subclassed from DynamicModelForm by metaclass')
-        self.assertTrue(issubclass(PuppetAdmin.inlines[0].form, DynamicModelForm),
-                        'User defined inline forms should be subclassed from DynamicModelForm by dynamic_inline_factory')
+        self.assertTrue(
+            issubclass(PuppetAdmin.inlines[0].form, DynamicModelForm),
+            'User defined inline forms should be subclassed from DynamicModelForm by dynamic_inline_factory'
+        )
 
 
 class AdminChoicesTest(AdminTest):
+
     def _get_choices(self, data=None):
         default = {
             'enemy_set-TOTAL_FORMS': 0,
@@ -272,13 +279,14 @@ class AdminChoicesTest(AdminTest):
         data = json.loads(response.content)
         self.assertEqual(data['enemy_set-__prefix__-enemy']['value'],
                          [
-                           ['', '---------'],
-                           ['Evil', [[2, 'Evil puppet (2)'],]],
-                           ['Neutral', []],
-                          ])
+            ['', '---------'],
+            ['Evil', [[2, 'Evil puppet (2)'], ]],
+            ['Neutral', []],
+        ])
 
 
 class DefinitionValidationTest(TestCase):
+
     def test_method_definition(self):
         with self.assertRaises(FieldError):
             class MissingChoicesCallbackModel(Model):

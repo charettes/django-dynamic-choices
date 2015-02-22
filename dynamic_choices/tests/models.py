@@ -3,9 +3,10 @@ from django.db import models
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
 
-from dynamic_choices.db.models import (DynamicChoicesForeignKey,
-    DynamicChoicesManyToManyField, DynamicChoicesOneToOneField)
-
+from dynamic_choices.db.models import (
+    DynamicChoicesForeignKey, DynamicChoicesManyToManyField,
+    DynamicChoicesOneToOneField,
+)
 
 ALIGNMENT_EVIL = 0
 ALIGNMENT_GOOD = 1
@@ -61,9 +62,9 @@ class Puppet(models.Model):
             return same_alignment
         else:
             return (
-                        (alignment_display(alignment), same_alignment),
-                        ('Neutral', queryset.filter(alignment=ALIGNMENT_NEUTRAL))
-                    )
+                (alignment_display(alignment), same_alignment),
+                ('Neutral', queryset.filter(alignment=ALIGNMENT_NEUTRAL))
+            )
 
     def choices_for_secret_lover(self, queryset):
         if self.pk:

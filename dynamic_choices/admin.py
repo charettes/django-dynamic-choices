@@ -4,34 +4,32 @@ from django.conf.urls.defaults import url
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
-from django.forms.models import _get_foreign_key, model_to_dict, ModelForm
+from django.forms.models import ModelForm, _get_foreign_key, model_to_dict
 from django.forms.widgets import Select, SelectMultiple
-from django.http import Http404, HttpResponseBadRequest, HttpResponse
-from django.template.defaultfilters import escape
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.template.base import FilterExpression
+from django.template.defaultfilters import escape
 from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode
 from django.utils.encoding import force_unicode
 from django.utils.functional import Promise, update_wrapper
 from django.utils.safestring import SafeUnicode
 
+from .forms import DynamicModelForm, dynamic_model_form_factory
+from .forms.fields import DynamicModelChoiceField
+
 try:
     from django.db.models.constants import LOOKUP_SEP
 except ImportError:
     from django.db.models.sql.constants import LOOKUP_SEP
 
-from .forms import DynamicModelForm, dynamic_model_form_factory
-from .forms.fields import DynamicModelChoiceField
-
 
 class LazyEncoder(json.JSONEncoder):
-    """
-        Encoder used for
-    """
     def default(self, obj):
         if isinstance(obj, Promise):
             return force_unicode(obj)
         return super(LazyEncoder, self).default(obj)
+
 lazy_encoder = LazyEncoder()
 
 
@@ -50,13 +48,15 @@ def get_dynamic_choices_from_form(form):
                 widget = "%s.%s" % (widget_cls.__module__,
                                     widget_cls.__name__)
             fields[prefix % name] = {
-                                     'widget': widget,
-                                     'value': list(field.widget.choices)
-                                     }
+                'widget': widget,
+                'value': list(field.widget.choices)
+            }
     return fields
+
 
 def dynamic_formset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
+
         def _construct_forms(self):
             "Append initial data for every single form"
             store = getattr(self, 'initial', None)
@@ -80,6 +80,7 @@ def dynamic_formset_factory(fieldset_cls, initial):
     cls.__name__ = "Dynamic%s" % fieldset_cls.__name__
     return cls
 
+
 def dynamic_inline_factory(inline_cls):
     "Make sure the inline has a dynamic form"
     form_cls = getattr(inline_cls, 'form', None)
@@ -102,10 +103,11 @@ def dynamic_inline_factory(inline_cls):
     cls.__name__ = "Dynamic%s" % inline_cls.__name__
     return cls
 
+
 def template_extends(template_name, expected_parent_name):
     template = get_template(template_name)
     if (len(template.nodelist) and
-        isinstance(template.nodelist[0], ExtendsNode)):
+            isinstance(template.nodelist[0], ExtendsNode)):
         node = template.nodelist[0]
         parent_name = node.parent_name
         # As of django 1.4, parent_name is a FilterExpression
@@ -118,11 +120,13 @@ def template_extends(template_name, expected_parent_name):
     else:
         return False
 
+
 def dynamic_admin_factory(admin_cls):
 
     change_form_template = 'admin/dynamic_choices/change_form.html'
 
     class meta_cls(type(admin_cls)):
+
         "Metaclass that ensure form and inlines are dynamic"
         def __new__(cls, name, bases, attrs):
             # If there's already a form defined we make sure to subclass it
@@ -179,16 +183,20 @@ def dynamic_admin_factory(admin_cls):
 
         def get_dynamic_choices_binder(self, request):
 
-            id = lambda field: "[name='%s']" % field
-            inline_field_selector = lambda fieldset, field: "[name^='%s-'][name$='-%s']" % (fieldset, field)
+            def id(field):
+                return "[name='%s']" % field
+
+            def inline_field_selector(fieldset, field):
+                return "[name^='%s-'][name$='-%s']" % (fieldset, field)
 
             fields = {}
+
             def add_fields(to_fields, to_field, bind_fields):
                 if not (to_field in to_fields):
                     to_fields[to_field] = set()
                 to_fields[to_field].update(bind_fields)
 
-            app_name, model_name = self.model._meta.app_label, self.model._meta.module_name
+            model_name = self.model._meta.module_name
 
             # Use get_form in order to allow formfield override
             # We should create a fake request from referer but all this
@@ -210,8 +218,11 @@ def dynamic_admin_factory(admin_cls):
                     if LOOKUP_SEP in rel:
                         base, field = rel.split(LOOKUP_SEP)[0:2]
                         if base == model_name and field in form.fields:
-                            add_fields(fields, id(field), [inline_field_selector(prefix, field) \
-                                                           for field in inline_rels[rel] if field in formset_form.fields])
+                            bound_fields = [
+                                inline_field_selector(prefix, f)
+                                for f in inline_rels[rel] if f in formset_form.fields
+                            ]
+                            add_fields(fields, id(field), bound_fields)
                         elif base in formset_form.fields:
                             add_fields(inline, base, inline_rels[rel])
                     elif rel in formset_form.fields:
@@ -236,7 +247,7 @@ def dynamic_admin_factory(admin_cls):
             obj = self.get_object(request, object_id)
             # Make sure the specified object exists
             if object_id is not None and obj is None:
-                raise Http404(_('%(name)s object with primary key %(key)r does not exist.') % {
+                raise Http404('%(name)s object with primary key %(key)r does not exist.' % {
                               'name': force_unicode(opts.verbose_name), 'key': escape(object_id)})
 
             form = self.get_form(request)(request.GET, instance=obj)
@@ -294,7 +305,7 @@ def dynamic_admin_factory(admin_cls):
 
             for formset, inline in zip(super(cls, self).get_formsets(request, obj), inline_instances):
                 fk = _get_foreign_key(self.model, inline.model, fk_name=inline.fk_name).name
-                fk_initial = dict(('%s__%s' % (fk, k),v) for k, v in initial.iteritems())
+                fk_initial = dict(('%s__%s' % (fk, k), v) for k, v in initial.iteritems())
                 # If we must provide additional data
                 # we must wrap the formset in a subclass
                 # because passing 'initial' key argument is intercepted

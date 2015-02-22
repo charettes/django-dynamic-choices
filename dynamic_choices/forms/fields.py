@@ -1,22 +1,24 @@
 
 from django.forms.fields import ChoiceField
-from django.forms.models import (ModelChoiceField, ModelChoiceIterator,
-    ModelMultipleChoiceField)
-    
+from django.forms.models import (
+    ModelChoiceField, ModelChoiceIterator, ModelMultipleChoiceField,
+)
+
 from ..db.query import CompositeQuerySet, DynamicChoicesQuerySet
 
 
 class GroupedModelChoiceIterator(ModelChoiceIterator):
+
     def __init__(self, field):
         super(GroupedModelChoiceIterator, self).__init__(field)
         self.groups = field._groups
-    
+
     def __iter__(self):
         if self.field.empty_label is not None:
             yield (u"", self.field.empty_label)
-            
-        #TODO: consider field.cache_choices
-        
+
+        # TODO: consider field.cache_choices
+
         for group in self.groups:
             label, qs = group
             yield (label, [self.choice(obj) for obj in qs])
@@ -24,8 +26,9 @@ class GroupedModelChoiceIterator(ModelChoiceIterator):
     def __len__(self):
         return sum(len(group[1]) for group in self.groups)
 
+
 class DynamicModelChoiceField(ModelChoiceField):
-    
+
     def __init__(self, *args, **kwargs):
         self._instance = None
         self._data = {}
@@ -47,12 +50,12 @@ class DynamicModelChoiceField(ModelChoiceField):
         self.widget.choices = self.choices
 
     queryset = property(_get_queryset, _set_queryset)
-    
+
     def set_choice_data(self, instance, data):
         self._instance = instance
         self._data = data
         self.queryset = self._original_queryset
-        
+
     def _get_choices(self):
         if isinstance(self._groups, tuple):
             return GroupedModelChoiceIterator(self)
@@ -60,6 +63,7 @@ class DynamicModelChoiceField(ModelChoiceField):
             return super(DynamicModelChoiceField, self)._get_choices()
 
     choices = property(_get_choices, ChoiceField._set_choices)
+
 
 class DynamicModelMultipleChoiceField(DynamicModelChoiceField, ModelMultipleChoiceField):
     pass

@@ -4,7 +4,6 @@ from django.conf.urls.defaults import include
 
 from . import admin
 
-
 urlpatterns = [
     (r'^admin/', include(admin.site.urls)),
 ]

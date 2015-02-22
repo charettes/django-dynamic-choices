@@ -26,6 +26,7 @@ SETTINGS = {
     'ROOT_URLCONF': 'dynamic_choices.tests.urls',
 }
 
+
 def main(verbosity, failfast, test_labels):
     if not test_labels:
         test_labels = ('dynamic_choices',)

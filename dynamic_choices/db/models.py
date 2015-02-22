@@ -4,23 +4,24 @@ from django.core import exceptions
 from django.core.exceptions import FieldError
 from django.db.models import ForeignKey, ManyToManyField, OneToOneField
 from django.db.models.base import Model
-from django.db.models.fields import FieldDoesNotExist, Field
+from django.db.models.fields import Field, FieldDoesNotExist
 from django.db.models.fields.related import add_lazy_relation
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
+
+from ..forms.fields import (
+    DynamicModelChoiceField, DynamicModelMultipleChoiceField,
+)
+from .query import CompositeQuerySet, dynamic_queryset_factory
 
 try:
     from django.db.models.constants import LOOKUP_SEP
 except ImportError:
     from django.db.models.sql.constants import LOOKUP_SEP
 
-from .query import CompositeQuerySet, dynamic_queryset_factory
-from ..forms.fields import (DynamicModelChoiceField,
-    DynamicModelMultipleChoiceField)
-
 
 class DynamicChoicesField(object):
-    
+
     def __init__(self, *args, **kwargs):
         super(DynamicChoicesField, self).__init__(*args, **kwargs)
         # Hack to bypass non iterable choices validation
@@ -30,14 +31,14 @@ class DynamicChoicesField(object):
         else:
             self._choices_callback = None
         self._choices_relationships = None
-    
+
     def contribute_to_class(self, cls, name):
         super(DynamicChoicesField, self).contribute_to_class(cls, name)
-        
+
         if self._choices_callback is not None:
             class_prepared.connect(self.__validate_definition,
                                    sender=cls)
-    
+
     def __validate_definition(self, *args, **kwargs):
         def error(message):
             raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
@@ -50,13 +51,13 @@ class DynamicChoicesField(object):
             callback = getattr(self.related.model, self._choices_callback, None)
             if not callable(callback):
                 error('Cannot find method specified by choices.')
-            args_length = 2 # Since the callback is a method we must emulate the 'self'
+            args_length = 2  # Since the callback is a method we must emulate the 'self'
             self._choices_callback = callback
         else:
-            args_length = 1 # It's a callable, it needs no reference to model instance
-        
+            args_length = 1  # It's a callable, it needs no reference to model instance
+
         spec = inspect.getargspec(self._choices_callback)
-        
+
         # Make sure the callback has the correct number or arg
         if spec.defaults is not None:
             spec_defaults_len = len(spec.defaults)
@@ -64,12 +65,12 @@ class DynamicChoicesField(object):
             self._choices_relationships = spec.args[-spec_defaults_len:]
         else:
             self._choices_relationships = []
-        
+
         if len(spec.args) != args_length:
             error('Specified choices callback must accept only a single arg')
-        
+
         self._choices_callback_field_descriptors = {}
-        
+
         # We make sure field descriptors are valid
         for descriptor in self._choices_relationships:
             lookups = descriptor.split(LOOKUP_SEP)
@@ -99,7 +100,7 @@ class DynamicChoicesField(object):
                     # We cannot go deeper if it's not a model
                     elif step != depth:
                         error('Invalid descriptor "%s", "%s" is not a ForeignKey to a model' % (
-                               LOOKUP_SEP.join(lookups), LOOKUP_SEP.join(lookups[:step])))
+                            LOOKUP_SEP.join(lookups), LOOKUP_SEP.join(lookups[:step])))
                     fields.append(field)
                 except FieldDoesNotExist:
                     # Lookup failed, suggest alternatives
@@ -109,30 +110,30 @@ class DynamicChoicesField(object):
                     choice_descriptors = [(depth_descriptor + name) for name in meta.get_all_field_names()]
                     error('Invalid descriptor "%s", choices are %s' % (
                           LOOKUP_SEP.join(descriptor), ', '.join(choice_descriptors)))
-            
+
             self._choices_callback_field_descriptors[descriptor] = fields
-    
+
     @property
     def has_choices_callback(self):
         return callable(self._choices_callback)
-    
+
     @property
     def choices_relationships(self):
         return self._choices_relationships
-    
+
     def _invoke_choices_callback(self, model_instance, qs, data):
         args = [qs]
         # Make sure we pass the instance if the callback is a class method
         if inspect.ismethod(self._choices_callback):
             args.insert(0, model_instance)
-        
+
         values = {}
         for descriptor, fields in self._choices_callback_field_descriptors.items():
             depth = len(fields)
             step = 1
             lookup_data = data
             value = None
-            
+
             # Direct lookup
             # foo__bar in data
             if descriptor in data:
@@ -154,7 +155,7 @@ class DynamicChoicesField(object):
                                 # We cannot lookup in m2m, it must be the final step
                                 break
                             elif isinstance(value, list):
-                                value = value[0] # Make sure we've got a scalar
+                                value = value[0]  # Make sure we've got a scalar
                             if isinstance(field, ForeignKey):
                                 if not isinstance(value, Model):
                                     try:
@@ -167,18 +168,18 @@ class DynamicChoicesField(object):
                             step += 1
                     elif step != depth:
                         field_name = "%s%s%s" % (field_name, LOOKUP_SEP, '%s')
-            
+
             # We reached descriptors depth
             if step == depth:
                 if isinstance(value, list) and \
-                    not isinstance(field, ManyToManyField):
-                    value = value[0] # Make sure we've got a scalar if its not a m2m
+                        not isinstance(field, ManyToManyField):
+                    value = value[0]  # Make sure we've got a scalar if its not a m2m
                 # Attempt to cast value, if failed we don't assign since it's invalid
                 try:
                     values[descriptor] = field.to_python(value)
                 except:
                     pass
-        
+
         return self._choices_callback(*args, **values)
 
     def __super(self):
@@ -186,7 +187,7 @@ class DynamicChoicesField(object):
         # to inherit this behavior with multiple inheritance
         for base in self.__class__.__bases__:
             if issubclass(base, Field):
-                self.__super = lambda : base #cache
+                self.__super = lambda: base  # cache
                 return base
         raise Exception('Subclasses must inherit from atleast one subclass of django.db.fields.Field')
 
@@ -202,16 +203,17 @@ class DynamicChoicesField(object):
             defaults.update(kwargs)
         else:
             defaults = kwargs
-            
+
         return self.__super().formfield(self, **defaults)
 
+
 class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
-    
+
     def validate(self, value, model_instance):
         if self.has_choices_callback:
             if self.rel.parent_link or value is None:
                 return
-            
+
             data = model_to_dict(model_instance)
             for field in model_instance._meta.fields:
                 try:
@@ -221,38 +223,40 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
             if model_instance.pk:
                 for m2m in model_instance._meta.many_to_many:
                     data[m2m.name] = getattr(model_instance, m2m.name).all()
-            
-            qs = self.rel.to._default_manager.filter(**{self.rel.field_name:value})
+
+            qs = self.rel.to._default_manager.filter(**{self.rel.field_name: value})
             qs = qs.complex_filter(self.rel.limit_choices_to)
-            
+
             dcqs = self._invoke_choices_callback(model_instance, qs, data)
 
-            # If a tuple is provided we must validate that at least one 
+            # If a tuple is provided we must validate that at least one
             # QuerySet contains the selected choice
             if isinstance(dcqs, tuple):
                 dcqs = CompositeQuerySet(qs[1] for qs in dcqs)
-            
+
             if not dcqs.exists():
                 raise exceptions.ValidationError(self.error_messages['invalid'] % {
                     'model': self.rel.to._meta.verbose_name, 'pk': value})
         else:
             super(DynamicChoicesForeignKey, self).validate(value, model_instance)
 
+
 class DynamicChoicesForeignKey(DynamicChoicesForeignKeyMixin, ForeignKey):
 
     form_class = DynamicModelChoiceField
 
+
 class DynamicChoicesOneToOneField(DynamicChoicesForeignKeyMixin, OneToOneField):
-    
+
     form_class = DynamicModelChoiceField
 
+
 class DynamicChoicesManyToManyField(DynamicChoicesField, ManyToManyField):
-    
+
     form_class = DynamicModelMultipleChoiceField
-    
+
 try:
     from south.modelsinspector import add_introspection_rules
     add_introspection_rules([], ['^dynamic_choices\.db\.models'])
 except ImportError:
     pass
-    

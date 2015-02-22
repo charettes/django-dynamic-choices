@@ -2,9 +2,8 @@
 from django.contrib import admin
 
 from ..admin import DynamicAdmin
-
 from .forms import UserDefinedForm
-from .models import Puppet, Master
+from .models import Master, Puppet
 
 
 class EnemyInline(admin.TabularInline):

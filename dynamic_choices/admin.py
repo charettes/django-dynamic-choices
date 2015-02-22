@@ -71,11 +71,16 @@ def dynamic_formset_factory(fieldset_cls, initial):
                     store.insert(i, initial)
             return super(cls, self)._construct_forms()
 
-        def _get_empty_form(self, **kwargs):
-            defaults = {'initial': initial}
-            defaults.update(kwargs)
-            return super(cls, self)._get_empty_form(**defaults)
-        empty_form = property(_get_empty_form)
+        @property
+        def empty_form(self):
+            form = self.form(
+                auto_id=self.auto_id,
+                prefix=self.add_prefix('__prefix__'),
+                empty_permitted=True,
+                initial=initial,
+            )
+            self.add_fields(form, None)
+            return form
 
     cls.__name__ = "Dynamic%s" % fieldset_cls.__name__
     return cls

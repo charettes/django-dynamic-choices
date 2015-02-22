@@ -20,7 +20,6 @@ matrix:
     - python: 2.6
       env: DJANGO=1.6
   allow_failures:
-    - env: DJANGO=1.5
     - env: DJANGO=1.6
     - env: DJANGO=1.7
     - env: DJANGO=1.8

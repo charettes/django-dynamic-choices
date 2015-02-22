@@ -1,1 +1,0 @@
-Provide fk and m2m dynamic choices and react to django.contrib.admin edit/add view interaction to update those choices.

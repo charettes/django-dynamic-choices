@@ -1,8 +1,9 @@
 import json
 import os
 
-from django.core.exceptions import (FieldError, ImproperlyConfigured,
-                                    ValidationError)
+from django.core.exceptions import (
+    FieldError, ImproperlyConfigured, ValidationError,
+)
 from django.db.models import Model
 from django.test import TestCase
 from django.test.client import Client
@@ -10,12 +11,12 @@ from django.test.client import Client
 from dynamic_choices.admin import DynamicAdmin
 from dynamic_choices.db.models import DynamicChoicesForeignKey
 from dynamic_choices.forms import DynamicModelForm
-from dynamic_choices.forms.fields import (DynamicModelMultipleChoiceField,
-                                          DynamicModelChoiceField)
+from dynamic_choices.forms.fields import (
+    DynamicModelChoiceField, DynamicModelMultipleChoiceField,
+)
 
 from .admin import PuppetAdmin
-from .models import Master, Puppet, ALIGNMENT_EVIL, ALIGNMENT_GOOD
-
+from .models import ALIGNMENT_EVIL, ALIGNMENT_GOOD, Master, Puppet
 
 MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
 

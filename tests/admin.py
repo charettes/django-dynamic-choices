@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from dynamic_choices.admin import DynamicAdmin
 
 from .forms import UserDefinedForm

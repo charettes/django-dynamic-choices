@@ -280,7 +280,7 @@ def dynamic_admin_factory(admin_cls):
                     if not (field in fields):
                         del data[field]
 
-            return HttpResponse(lazy_encoder.encode(data), mimetype='application/json')
+            return HttpResponse(lazy_encoder.encode(data), content_type='application/json')
 
         # Make sure to pass request data to fieldsets
         # so they can use it to define choices

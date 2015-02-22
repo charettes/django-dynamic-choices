@@ -1,5 +1,6 @@
 from itertools import chain
 
+import django
 from django.db.models.query import EmptyQuerySet, QuerySet
 
 
@@ -62,8 +63,9 @@ class DynamicChoicesQuerySet(QuerySet):
     def filter_for_instance(self, instance, data):
         return self._field._invoke_choices_callback(instance, self, data)
 
-    def none(self):
-        return self._clone(klass=EmptyDynamicChoicesQuerySet)
+    if django.VERSION < (1, 6):
+        def none(self):
+            return self._clone(klass=EmptyDynamicChoicesQuerySet)
 
 
 def dynamic_queryset_factory(queryset, field):

@@ -19,9 +19,7 @@ setup(
     url=github_url,
     author='Simon Charette',
     author_email='charette.s@gmail.com',
-    requires=[
-        "Django>=1.4"
-    ],
+    install_requires=['django>=1.4'],
     packages=find_packages(exclude=['testapp']),
     include_package_data=True,
     license='MIT License',

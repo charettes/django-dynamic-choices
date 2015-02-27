@@ -1,5 +1,4 @@
-
-from django.db.models import QuerySet
+from django.db.models.query import QuerySet
 from django.forms.fields import ChoiceField
 from django.forms.models import (
     ModelChoiceField, ModelChoiceIterator, ModelMultipleChoiceField,

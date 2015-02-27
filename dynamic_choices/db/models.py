@@ -2,12 +2,11 @@ import inspect
 
 from django.core import exceptions
 from django.core.exceptions import FieldError
-from django.db.models import (
-    ForeignKey, ManyToManyField, OneToOneField, QuerySet,
-)
+from django.db.models import ForeignKey, ManyToManyField, OneToOneField
 from django.db.models.base import Model
 from django.db.models.fields import Field, FieldDoesNotExist
 from django.db.models.fields.related import add_lazy_relation
+from django.db.models.query import QuerySet
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
 

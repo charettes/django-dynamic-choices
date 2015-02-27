@@ -153,7 +153,7 @@
                 return true;
             }).toArray();
             if ($.inArray(true, fields) == -1) return;
-            $(formset).find(bindedFieldsetFieldsSelector).live('change', function(event) {
+            $(formset).delegate(bindedFieldsetFieldsSelector, 'change', function(event) {
                 var index = inlineField(event.target).index;
                 updateAddLink($(buildInlineFieldId(formsetName, field, index))[0],
                     bindedFormFieldsSelector,

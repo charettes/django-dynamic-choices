@@ -2,7 +2,9 @@ import inspect
 
 from django.core import exceptions
 from django.core.exceptions import FieldError
-from django.db.models import ForeignKey, ManyToManyField, OneToOneField
+from django.db.models import (
+    ForeignKey, ManyToManyField, OneToOneField, QuerySet,
+)
 from django.db.models.base import Model
 from django.db.models.fields import Field, FieldDoesNotExist
 from django.db.models.fields.related import add_lazy_relation
@@ -229,9 +231,9 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
 
             dcqs = self._invoke_choices_callback(model_instance, qs, data)
 
-            # If a tuple is provided we must validate that at least one
-            # QuerySet contains the selected choice
-            if isinstance(dcqs, tuple):
+            # If the choices are not a queryset we assume it's an iterable of couple
+            # of label and querysets.
+            if not isinstance(dcqs, QuerySet):
                 dcqs = CompositeQuerySet(qs[1] for qs in dcqs)
 
             if not dcqs.exists():

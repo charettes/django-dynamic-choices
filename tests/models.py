@@ -94,9 +94,7 @@ class Enemy(models.Model):
         if puppet__alignment is None:
             return queryset.none()
         else:
-            choices = []
-            for alignment in ALIGNMENTS:
-                value, display = alignment
-                if value != puppet__alignment:
-                    choices.append((_(display), queryset.filter(alignment=value)))
-            return tuple(choices)
+            return [
+                (_(label), queryset.filter(alignment=alignment))
+                for alignment, label in ALIGNMENTS if alignment != puppet__alignment
+            ]

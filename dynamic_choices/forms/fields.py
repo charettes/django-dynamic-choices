@@ -1,4 +1,5 @@
 
+from django.db.models import QuerySet
 from django.forms.fields import ChoiceField
 from django.forms.models import (
     ModelChoiceField, ModelChoiceIterator, ModelMultipleChoiceField,
@@ -43,7 +44,7 @@ class DynamicModelChoiceField(ModelChoiceField):
         self._groups = None
         if self._instance and isinstance(queryset, DynamicChoicesQuerySet):
             queryset = queryset.filter_for_instance(self._instance, self._data)
-            if isinstance(queryset, tuple):
+            if not isinstance(queryset, QuerySet):
                 self._groups = queryset
                 queryset = CompositeQuerySet(q[1] for q in queryset)
         self._queryset = queryset
@@ -57,10 +58,9 @@ class DynamicModelChoiceField(ModelChoiceField):
         self.queryset = self._original_queryset
 
     def _get_choices(self):
-        if isinstance(self._groups, tuple):
-            return GroupedModelChoiceIterator(self)
-        else:
+        if self._groups is None:
             return super(DynamicModelChoiceField, self)._get_choices()
+        return GroupedModelChoiceIterator(self)
 
     choices = property(_get_choices, ChoiceField._set_choices)
 

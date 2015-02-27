@@ -128,13 +128,13 @@
         }).toArray().join(', ');
     };
 
-    django.dynamicAdmin.bindFormsetFieldsAddLink = function(formset, field, bindedFormsetFields, bindedFormFieldsSelector, parametersCallback) {
-        bindedFormsetFields = bindedFormsetFields || [];
-        bindedFormFieldsSelector = bindedFormFieldsSelector || '';
+    django.dynamicAdmin.bindFormsetFieldsAddLink = function(formset, field, boundFormsetFields, boundFormFieldsSelector, parametersCallback) {
+        boundFormsetFields = boundFormsetFields || [];
+        boundFormFieldsSelector = boundFormFieldsSelector || '';
         var fieldSelector = buildInlineFieldSelector(field);
         $(formset).each(function(index, formset) {
             var formsetName = formset.id.match(/^(\w+)-group$/)[1]
-            bindedFieldsetFieldsSelector = $(bindedFormsetFields)
+            boundFieldsetFieldsSelector = $(boundFormsetFields)
                 .map(function(i, e) {
                     return buildInlineFieldSelector(e)
                 })
@@ -147,25 +147,25 @@
                 };
                 var index = inlineField(element).index;
                 updateAddLink(element,
-                    bindedFormFieldsSelector,
-                    buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
+                    boundFormFieldsSelector,
+                    buildFormsetFieldsSelector(formsetName, boundFormsetFields, index),
                     parametersCallback);
                 return true;
             }).toArray();
             if ($.inArray(true, fields) == -1) return;
-            $(formset).delegate(bindedFieldsetFieldsSelector, 'change', function(event) {
+            $(formset).delegate(boundFieldsetFieldsSelector, 'change', function(event) {
                 var index = inlineField(event.target).index;
                 updateAddLink($(buildInlineFieldId(formsetName, field, index))[0],
-                    bindedFormFieldsSelector,
-                    buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
+                    boundFormFieldsSelector,
+                    buildFormsetFieldsSelector(formsetName, boundFormsetFields, index),
                     parametersCallback);
             });
-            $(bindedFormFieldsSelector).change(function(event) {
+            $(boundFormFieldsSelector).change(function(event) {
                 $(formset).find(fieldSelector).each(function(index, element) {
                     var index = inlineField(element).index;
                     updateAddLink(element,
-                        bindedFormFieldsSelector,
-                        buildFormsetFieldsSelector(formsetName, bindedFormsetFields, index),
+                        boundFormFieldsSelector,
+                        buildFormsetFieldsSelector(formsetName, boundFormsetFields, index),
                         parametersCallback);
                 });
             });

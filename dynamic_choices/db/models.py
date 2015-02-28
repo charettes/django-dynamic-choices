@@ -225,19 +225,23 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
                 for m2m in model_instance._meta.many_to_many:
                     data[m2m.name] = getattr(model_instance, m2m.name).all()
 
-            qs = self.rel.to._default_manager.filter(**{self.rel.field_name: value})
-            qs = qs.complex_filter(self.rel.limit_choices_to)
+            queryset = self.rel.to._default_manager.filter(**{self.rel.field_name: value})
+            queryset = queryset.complex_filter(self.rel.limit_choices_to)
 
-            dcqs = self._invoke_choices_callback(model_instance, qs, data)
+            queryset = self._invoke_choices_callback(model_instance, queryset, data)
 
             # If the choices are not a queryset we assume it's an iterable of couple
             # of label and querysets.
-            if not isinstance(dcqs, QuerySet):
-                dcqs = CompositeQuerySet(qs[1] for qs in dcqs)
+            if not isinstance(queryset, QuerySet):
+                queryset = CompositeQuerySet(qs[1] for qs in queryset)
 
-            if not dcqs.exists():
-                raise exceptions.ValidationError(self.error_messages['invalid'] % {
-                    'model': self.rel.to._meta.verbose_name, 'pk': value})
+            if not queryset.exists():
+                raise exceptions.ValidationError(self.error_messages['invalid'], code='invalid', params={
+                    'model': self.rel.to._meta.verbose_name,
+                    'field': self.rel.field_name,
+                    'value': value,
+                    'pk': value,  # included for backwards compatibility
+                })
         else:
             super(DynamicChoicesForeignKey, self).validate(value, model_instance)
 

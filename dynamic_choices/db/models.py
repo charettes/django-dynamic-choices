@@ -1,24 +1,23 @@
+from __future__ import unicode_literals
+
 import inspect
 
 from django.core import exceptions
 from django.core.exceptions import FieldError
 from django.db.models import ForeignKey, ManyToManyField, OneToOneField
 from django.db.models.base import Model
+from django.db.models.constants import LOOKUP_SEP
 from django.db.models.fields import Field, FieldDoesNotExist
 from django.db.models.fields.related import add_lazy_relation
 from django.db.models.query import QuerySet
 from django.db.models.signals import class_prepared
 from django.forms.models import model_to_dict
+from django.utils import six
 
 from ..forms.fields import (
     DynamicModelChoiceField, DynamicModelMultipleChoiceField,
 )
 from .query import CompositeQuerySet, dynamic_queryset_factory
-
-try:
-    from django.db.models.constants import LOOKUP_SEP
-except ImportError:
-    from django.db.models.sql.constants import LOOKUP_SEP
 
 
 class DynamicChoicesField(object):
@@ -26,7 +25,7 @@ class DynamicChoicesField(object):
     def __init__(self, *args, **kwargs):
         super(DynamicChoicesField, self).__init__(*args, **kwargs)
         # Hack to bypass non iterable choices validation
-        if isinstance(self._choices, basestring) or callable(self._choices):
+        if isinstance(self._choices, six.string_types) or callable(self._choices):
             self._choices_callback = self._choices
             self._choices = []
         else:
@@ -37,8 +36,7 @@ class DynamicChoicesField(object):
         super(DynamicChoicesField, self).contribute_to_class(cls, name)
 
         if self._choices_callback is not None:
-            class_prepared.connect(self.__validate_definition,
-                                   sender=cls)
+            class_prepared.connect(self.__validate_definition, sender=cls)
 
     def __validate_definition(self, *args, **kwargs):
         def error(message):
@@ -48,14 +46,16 @@ class DynamicChoicesField(object):
 
         # The choices we're defined by a string
         # therefore it should be a cls method
-        if isinstance(self._choices_callback, basestring):
+        if isinstance(self._choices_callback, six.string_types):
             callback = getattr(self.related.model, self._choices_callback, None)
             if not callable(callback):
                 error('Cannot find method specified by choices.')
             args_length = 2  # Since the callback is a method we must emulate the 'self'
             self._choices_callback = callback
+            self._choices_callback_requires_instance = True
         else:
             args_length = 1  # It's a callable, it needs no reference to model instance
+            self._choices_callback_requires_instance = False
 
         spec = inspect.getargspec(self._choices_callback)
 
@@ -90,7 +90,7 @@ class DynamicChoicesField(object):
                             # The model hasn't been loaded yet
                             # so we must stop here and start over
                             # when it is loaded.
-                            if isinstance(field.rel.to, basestring):
+                            if isinstance(field.rel.to, six.string_types):
                                 self._choices_callback = original_choices_callback
                                 return add_lazy_relation(field.model, field,
                                                          field.rel.to,
@@ -125,7 +125,7 @@ class DynamicChoicesField(object):
     def _invoke_choices_callback(self, model_instance, qs, data):
         args = [qs]
         # Make sure we pass the instance if the callback is a class method
-        if inspect.ismethod(self._choices_callback):
+        if self._choices_callback_requires_instance:
             args.insert(0, model_instance)
 
         values = {}

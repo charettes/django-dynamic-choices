@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 import os
 
@@ -5,8 +7,10 @@ from django.core.exceptions import (
     FieldError, ImproperlyConfigured, ValidationError,
 )
 from django.db.models import Model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.test.client import Client
+from django.test.utils import override_settings
+from django.utils.encoding import force_text
 
 from dynamic_choices.admin import DynamicAdmin
 from dynamic_choices.db.models import DynamicChoicesForeignKey
@@ -63,40 +67,35 @@ class DynamicOneToOneField(TestCase):
         )
 
 
-class ImproperlyConfiguredAmin(TestCase):
-    def test_change_form_template_override(self):
-        """
-        Make sure ImproperlyConfigured exceptions are raised when a
-        `DynamicAdmin` subclass defines a `change_form_template` which do not
-        extends `admin/dynamic_choices/change_form.html`.
-        """
-        TEMPLATE_LOADERS = (
-            'django.template.loaders.filesystem.Loader',
-            'django.template.loaders.app_directories.Loader',
+@override_settings(
+    TEMPLATE_LOADERS=[
+        'django.template.loaders.filesystem.Loader',
+        'django.template.loaders.app_directories.Loader',
+    ],
+    TEMPLATE_DIRS=[os.path.join(MODULE_PATH, 'templates')],
+)
+class AdminConfigurationTests(SimpleTestCase):
+    def test_doesnt_extend_change_form(self):
+        expected_message = (
+            "Make sure specified "
+            "ChangeFormDoNotExtends.change_form_template='dynamic_choices_tests/do_not_extends_change_form.html' "
+            "template extends 'admin/dynamic_choices/change_form.html' in order to enable DynamicAdmin"
         )
-        TEMPLATE_DIRS = (
-            os.path.join(MODULE_PATH, 'templates'),
-        )
-        with self.settings(TEMPLATE_LOADERS=TEMPLATE_LOADERS,
-                           TEMPLATE_DIRS=TEMPLATE_DIRS):
-            with self.assertRaises(ImproperlyConfigured):
-                type('ChangeFormDoNotExtends', (DynamicAdmin,),
-                     {'change_form_template': 'dynamic_choices_tests/do_not_extends_change_form.html'})
-            try:
-                type('ChangeFormExtends', (DynamicAdmin,),
-                     {'change_form_template': 'dynamic_choices_tests/extends_change_form.html'})
-            except ImproperlyConfigured:
-                self.fail('Overriding the `change_form_template` on a '
-                          '`DynamicAdmin` subclass should work when the '
-                          'specified template extends "admin/dynamic_choices/change_form.html"')
-            try:
-                type('ChangeFormExtendsChild', (DynamicAdmin,),
-                     {'change_form_template': 'dynamic_choices_tests/extends_change_form_twice.html'})
-            except ImproperlyConfigured:
-                self.fail('Overriding the `change_form_template` on a '
-                          '`DynamicAdmin` subclass should work when the '
-                          'specified template extends "admin/dynamic_choices/change_form.html" '
-                          'indirectly.')
+        with self.assertRaisesMessage(ImproperlyConfigured, expected_message):
+            class ChangeFormDoNotExtends(DynamicAdmin):
+                change_form_template = 'dynamic_choices_tests/do_not_extends_change_form.html'
+
+    def test_change_form_extends(self):
+        """Overriding the `change_form_template` on a `DynamicAdmin` subclass should work when the specified
+        template extends the dynamic choices one."""
+        class ChangeFormExtends(DynamicAdmin):
+            change_form_template = 'dynamic_choices_tests/extends_change_form.html'
+
+    def test_change_form_extends_child(self):
+        """Overriding the `change_form_template` on a `DynamicAdmin` subclass should work when the specified
+        template extends the dynamic choices one."""
+        class ChangeFormExtends(DynamicAdmin):
+            change_form_template = 'dynamic_choices_tests/extends_change_form_twice.html'
 
 
 class AdminTest(TestCase):
@@ -221,21 +220,19 @@ class AdminChoicesTest(AdminTest):
         }
         if data:
             default.update(data)
-        return self.client.get('/admin/dynamic_choices/puppet/1/choices/',
-                               default)
+        return self.client.get('/admin/dynamic_choices/puppet/1/choices/', default)
 
     def test_medias_presence(self):
         """Make sure extra js files are present in the response"""
         response = self.client.get('/admin/dynamic_choices/puppet/1/')
-        self.assertIn('js/dynamic-choices.js', response.content)
-        self.assertIn('js/dynamic-choices-admin.js', response.content)
+        self.assertContains(response, 'js/dynamic-choices.js')
+        self.assertContains(response, 'js/dynamic-choices-admin.js')
 
     def test_fk_as_empty_string(self):
         """Make sure fk specified as empty string are parsed correctly"""
         data = {'alignment': ''}
         response = self._get_choices(data)
-        self.assertEquals(200, response.status_code,
-                          'Empty string fk shouldn\'t be cast as int')
+        self.assertEqual(200, response.status_code, "Empty string fk shouldn't be cast as int")
 
     def test_empty_string_value_overrides_default(self):
         """Make sure specified empty string overrides instance field"""
@@ -244,25 +241,23 @@ class AdminChoicesTest(AdminTest):
             'enemy_set-0-id': 1,
             'enemy_set-0-enemy': '',
             'enemy_set-TOTAL_FORMS': 3,
-            'enemy_set-INITIAL_FORMS': 1
+            'enemy_set-INITIAL_FORMS': 1,
         }
         response = self._get_choices(data)
         self.assertEqual(response.status_code, 200)
-        data = json.loads(response.content)
-        self.assertEqual(data['enemy_set-0-because_of']['value'],
-                         [['', '---------']])
+        data = json.loads(force_text(response.content))
+        self.assertEqual(data['enemy_set-0-because_of']['value'], [['', '---------']])
 
     def test_empty_form(self):
         """Make sure data is provided for an empty form"""
         data = {
             'DYNAMIC_CHOICES_FIELDS': 'enemy_set-__prefix__-enemy',
-            'alignment': 1
+            'alignment': 1,
         }
         response = self._get_choices(data)
         self.assertEqual(response.status_code, 200)
-        data = json.loads(response.content)
-        self.assertEqual(data['enemy_set-__prefix__-enemy']['value'],
-                         [
+        data = json.loads(force_text(response.content))
+        self.assertEqual(data['enemy_set-__prefix__-enemy']['value'], [
             ['', '---------'],
             ['Evil', [[2, 'Evil puppet (2)'], ]],
             ['Neutral', []],

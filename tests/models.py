@@ -1,6 +1,8 @@
+from __future__ import unicode_literals
 
 from django.db import models
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
+from django.utils.six import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from dynamic_choices.db.models import (
@@ -25,19 +27,21 @@ def same_alignment(queryset, alignment=None):
 
 def alignment_display(alignment):
     field = Puppet._meta.get_field('alignment')
-    return force_unicode(dict(field.flatchoices).get(int(alignment), alignment), strings_only=True)
+    return force_text(dict(field.flatchoices).get(int(alignment), alignment), strings_only=True)
 
 
+@python_2_unicode_compatible
 class Master(models.Model):
     alignment = models.SmallIntegerField(choices=ALIGNMENTS)
 
     class Meta:
         app_label = 'dynamic_choices'
 
-    def __unicode__(self):
-        return u"%s master (%d)" % (self.get_alignment_display(), self.pk)
+    def __str__(self):
+        return "%s master (%s)" % (self.get_alignment_display(), self.pk)
 
 
+@python_2_unicode_compatible
 class Puppet(models.Model):
     alignment = models.SmallIntegerField(choices=ALIGNMENTS)
     master = DynamicChoicesForeignKey(Master, choices=same_alignment)
@@ -50,8 +54,8 @@ class Puppet(models.Model):
     class Meta:
         app_label = 'dynamic_choices'
 
-    def __unicode__(self):
-        return u"%s puppet (%d)" % (self.get_alignment_display(), self.id)
+    def __str__(self):
+        return "%s puppet (%s)" % (self.get_alignment_display(), self.pk)
 
     def choices_for_friends(self, queryset, id=None, alignment=None):
         """

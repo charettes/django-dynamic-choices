@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.db.models.query import QuerySet
 from django.forms.fields import ChoiceField
 from django.forms.models import (
@@ -15,7 +17,7 @@ class GroupedModelChoiceIterator(ModelChoiceIterator):
 
     def __iter__(self):
         if self.field.empty_label is not None:
-            yield (u"", self.field.empty_label)
+            yield ("", self.field.empty_label)
 
         for label, queryset in self.groups:
             yield (label, [self.choice(obj) for obj in queryset])

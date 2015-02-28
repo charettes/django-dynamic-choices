@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.forms.models import ModelForm
 
 from .fields import DynamicModelChoiceField, DynamicModelMultipleChoiceField  # NOQA
@@ -15,8 +17,8 @@ def original_dynamic_model_form_factory(model_form_cls):
             # Fetch initial data for initial
             data = self.initial.copy()
 
-            # Update data if it's avaible
-            for field in self.fields.iterkeys():
+            # Update data if it's available
+            for field in self.fields:
                 raw_value = self._raw_value(field)
                 if raw_value is not None:
                     if raw_value:
@@ -25,14 +27,14 @@ def original_dynamic_model_form_factory(model_form_cls):
                         del data[field]
 
             # Bind instances to dynamic fields
-            for field in self.fields.itervalues():
+            for field in self.fields.values():
                 if isinstance(field, DynamicModelChoiceField):
                     field.set_choice_data(self.instance, data)
 
         def get_dynamic_relationships(self):
             rels = {}
             opts = self.instance._meta
-            for name, field in self.fields.iteritems():
+            for name, field in self.fields.items():
                 # TODO: check for excludes?
                 if isinstance(field, DynamicModelChoiceField):
                     for choice in opts.get_field(name).choices_relationships:
@@ -41,7 +43,7 @@ def original_dynamic_model_form_factory(model_form_cls):
                         rels[choice].add(name)
             return rels
 
-    cls.__name__ = "Dynamic%s" % model_form_cls.__name__
+    cls.__name__ = str("Dynamic%s" % model_form_cls.__name__)
     return cls
 
 DynamicModelForm = original_dynamic_model_form_factory(ModelForm)

@@ -1,40 +1,33 @@
+from __future__ import unicode_literals
+
 import json
 from functools import update_wrapper
 
-import django
+from django.conf.urls import url
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
+from django.db.models.constants import LOOKUP_SEP
 from django.forms.models import ModelForm, _get_foreign_key, model_to_dict
 from django.forms.widgets import Select, SelectMultiple
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
-from django.template.base import FilterExpression
 from django.template.defaultfilters import escape
 from django.template.loader import get_template
 from django.template.loader_tags import ExtendsNode
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.functional import Promise
-from django.utils.safestring import SafeUnicode
+from django.utils.safestring import SafeText
+from django.utils.six import with_metaclass
+from django.utils.six.moves import range
 
-from .compat import get_model_name
 from .forms import DynamicModelForm, dynamic_model_form_factory
 from .forms.fields import DynamicModelChoiceField
-
-try:
-    from django.conf.urls import url
-except ImportError:
-    from django.conf.urls.defaults import url
-
-try:
-    from django.db.models.constants import LOOKUP_SEP
-except ImportError:
-    from django.db.models.sql.constants import LOOKUP_SEP
 
 
 class LazyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Promise):
-            return force_unicode(obj)
+            return force_text(obj)
         return super(LazyEncoder, self).default(obj)
 
 lazy_encoder = LazyEncoder()
@@ -46,7 +39,7 @@ def get_dynamic_choices_from_form(form):
         prefix = "%s-%s" % (form.prefix, '%s')
     else:
         prefix = '%s'
-    for name, field in form.fields.iteritems():
+    for name, field in form.fields.items():
         if isinstance(field, DynamicModelChoiceField):
             widget_cls = field.widget.widget.__class__
             if widget_cls in (Select, SelectMultiple):
@@ -63,33 +56,18 @@ def get_dynamic_choices_from_form(form):
 
 def dynamic_formset_factory(fieldset_cls, initial):
     class cls(fieldset_cls):
-        if django.VERSION >= (1, 6):
-            def __init__(self, *args, **kwargs):
-                super(cls, self).__init__(*args, **kwargs)
-                store = getattr(self, 'initial', None)
-                if store is None:
-                    store = []
-                    setattr(self, 'initial', store)
-                for i in xrange(self.total_form_count()):
-                    try:
-                        actual = store[i]
-                        actual.update(initial)
-                    except (ValueError, IndexError):
-                        store.insert(i, initial)
-        else:
-            def _construct_forms(self):
-                "Append initial data for every single form"
-                store = getattr(self, 'initial', None)
-                if store is None:
-                    store = []
-                    setattr(self, 'initial', store)
-                for i in xrange(self.total_form_count()):
-                    try:
-                        actual = store[i]
-                        actual.update(initial)
-                    except (ValueError, IndexError):
-                        store.insert(i, initial)
-                return super(cls, self)._construct_forms()
+        def __init__(self, *args, **kwargs):
+            super(cls, self).__init__(*args, **kwargs)
+            store = getattr(self, 'initial', None)
+            if store is None:
+                store = []
+                setattr(self, 'initial', store)
+            for i in range(self.total_form_count()):
+                try:
+                    actual = store[i]
+                    actual.update(initial)
+                except (ValueError, IndexError):
+                    store.insert(i, initial)
 
         @property
         def empty_form(self):
@@ -102,7 +80,7 @@ def dynamic_formset_factory(fieldset_cls, initial):
             self.add_fields(form, None)
             return form
 
-    cls.__name__ = "Dynamic%s" % fieldset_cls.__name__
+    cls.__name__ = str("Dynamic%s" % fieldset_cls.__name__)
     return cls
 
 
@@ -125,7 +103,7 @@ def dynamic_inline_factory(inline_cls):
                 raise Exception('DynamicAdmin inlines\'s formset\'s form must be an instance of DynamicModelForm')
             return formset
 
-    cls.__name__ = "Dynamic%s" % inline_cls.__name__
+    cls.__name__ = str("Dynamic%s" % inline_cls.__name__)
     return cls
 
 
@@ -134,10 +112,7 @@ def template_extends(template_name, expected_parent_name):
     if (len(template.nodelist) and
             isinstance(template.nodelist[0], ExtendsNode)):
         node = template.nodelist[0]
-        parent_name = node.parent_name
-        # As of django 1.4, parent_name is a FilterExpression
-        if isinstance(parent_name, FilterExpression):
-            parent_name = parent_name.resolve({})
+        parent_name = node.parent_name.resolve({})
         if parent_name == expected_parent_name:
             return True
         else:
@@ -162,8 +137,8 @@ def dynamic_admin_factory(admin_cls):
 
             # Make sure the specified add|change_form_template
             # extends "admin/dynamic_choices/change_form.html"
-            for t, default in {'add_form_template': None,
-                               'change_form_template': change_form_template}.iteritems():
+            for t, default in [('add_form_template', None),
+                               ('change_form_template', change_form_template)]:
                 if t in attrs:
                     if not template_extends(attrs[t], change_form_template):
                         raise ImproperlyConfigured("Make sure specified %s.%s='%s' template extends '%s' "
@@ -179,10 +154,7 @@ def dynamic_admin_factory(admin_cls):
 
             return super(meta_cls, cls).__new__(cls, name, bases, attrs)
 
-    class cls(admin_cls):
-
-        __metaclass__ = meta_cls
-
+    class cls(with_metaclass(meta_cls, admin_cls)):
         def _media(self):
             media = super(cls, self).media
             media.add_js(('js/dynamic-choices.js',
@@ -196,7 +168,7 @@ def dynamic_admin_factory(admin_cls):
                     return self.admin_site.admin_view(view)(*args, **kwargs)
                 return update_wrapper(wrapper, view)
 
-            info = self.model._meta.app_label, get_model_name(self.model._meta)
+            info = self.model._meta.app_label, self.model._meta.model_name
 
             urlpatterns = [
                 url(r'(?:add|(?P<object_id>\w+))/choices/$',
@@ -221,7 +193,7 @@ def dynamic_admin_factory(admin_cls):
                     to_fields[to_field] = set()
                 to_fields[to_field].update(bind_fields)
 
-            model_name = get_model_name(self.model._meta)
+            model_name = self.model._meta.model_name
 
             # Use get_form in order to allow formfield override
             # We should create a fake request from referer but all this
@@ -256,15 +228,14 @@ def dynamic_admin_factory(admin_cls):
                     inlines[prefix] = inline
 
             # Replace sets in order to allow JSON serialization
-            for field, bindeds in fields.iteritems():
-                fields[field] = list(bindeds)
+            for field, bound_fields in fields.items():
+                fields[field] = list(bound_fields)
 
-            for fieldset, inline_fields in inlines.iteritems():
-                for field, bindeds in inline_fields.iteritems():
-                    inlines[fieldset][field] = list(bindeds)
+            for fieldset, inline_fields in inlines.items():
+                for field, bound_fields in inline_fields.items():
+                    inlines[fieldset][field] = list(bound_fields)
 
-            return SafeUnicode(u"django.dynamicAdmin(%s, %s);" % (json.dumps(fields),
-                                                                  json.dumps(inlines)))
+            return SafeText("django.dynamicAdmin(%s, %s);" % (json.dumps(fields), json.dumps(inlines)))
 
         def dynamic_choices(self, request, object_id=None):
 
@@ -273,7 +244,7 @@ def dynamic_admin_factory(admin_cls):
             # Make sure the specified object exists
             if object_id is not None and obj is None:
                 raise Http404('%(name)s object with primary key %(key)r does not exist.' % {
-                              'name': force_unicode(opts.verbose_name), 'key': escape(object_id)})
+                              'name': force_text(opts.verbose_name), 'key': escape(object_id)})
 
             form = self.get_form(request)(request.GET, instance=obj)
             data = get_dynamic_choices_from_form(form)
@@ -290,8 +261,8 @@ def dynamic_admin_factory(admin_cls):
 
             if 'DYNAMIC_CHOICES_FIELDS' in request.GET:
                 fields = request.GET.get('DYNAMIC_CHOICES_FIELDS').split(',')
-                for field in data.keys():
-                    if not (field in fields):
+                for field in list(data):
+                    if field not in fields:
                         del data[field]
 
             return HttpResponse(lazy_encoder.encode(data), content_type='application/json')
@@ -321,16 +292,10 @@ def dynamic_admin_factory(admin_cls):
                     else:
                         initial[k] = v
 
-            try:
-                # Django >= 1.4
-                inline_instances = self.get_inline_instances(request)
-            except AttributeError:
-                # Django < 1.4
-                inline_instances = self.inline_instances
-
+            inline_instances = self.get_inline_instances(request)
             for formset, inline in zip(super(cls, self).get_formsets(request, obj), inline_instances):
                 fk = _get_foreign_key(self.model, inline.model, fk_name=inline.fk_name).name
-                fk_initial = dict(('%s__%s' % (fk, k), v) for k, v in initial.iteritems())
+                fk_initial = dict(('%s__%s' % (fk, k), v) for k, v in initial.items())
                 # If we must provide additional data
                 # we must wrap the formset in a subclass
                 # because passing 'initial' key argument is intercepted

@@ -2,10 +2,11 @@ language: python
 
 python:
   - 2.7
+  - 3.2
+  - 3.3
+  - 3.4
 
 env:
-  - DJANGO=1.4
-  - DJANGO=1.5
   - DJANGO=1.6
   - DJANGO=1.7
   - DJANGO=1.8
@@ -14,10 +15,11 @@ env:
 matrix:
   include:
     - python: 2.6
-      env: DJANGO=1.4
-    - python: 2.6
-      env: DJANGO=1.5
-    - python: 2.6
+      env: DJANGO=1.6
+  exclude:
+    - python: 3.2
+      env: DJANGO=master
+    - python: 3.4
       env: DJANGO=1.6
   allow_failures:
     - env: DJANGO=1.8

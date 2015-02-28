@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from django.conf.global_settings import TEST_RUNNER
-
 DEBUG = True
 
 SECRET_KEY = 'not-anymore'
@@ -34,6 +32,3 @@ MIDDLEWARE_CLASSES = [
 ]
 
 ROOT_URLCONF = 'tests.urls'
-
-if not TEST_RUNNER.endswith('DiscoverRunner'):
-    TEST_RUNNER = str('discover_runner.DiscoverRunner')

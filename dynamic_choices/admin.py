@@ -12,8 +12,6 @@ from django.forms.models import ModelForm, _get_foreign_key, model_to_dict
 from django.forms.widgets import Select, SelectMultiple
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.template.defaultfilters import escape
-from django.template.loader import get_template
-from django.template.loader_tags import ExtendsNode
 from django.utils.encoding import force_text
 from django.utils.functional import Promise
 from django.utils.safestring import SafeText
@@ -22,6 +20,7 @@ from django.utils.six.moves import range
 
 from .forms import DynamicModelForm, dynamic_model_form_factory
 from .forms.fields import DynamicModelChoiceField
+from .utils import template_extends
 
 
 class LazyEncoder(json.JSONEncoder):
@@ -105,20 +104,6 @@ def dynamic_inline_factory(inline_cls):
 
     cls.__name__ = str("Dynamic%s" % inline_cls.__name__)
     return cls
-
-
-def template_extends(template_name, expected_parent_name):
-    template = get_template(template_name)
-    if (len(template.nodelist) and
-            isinstance(template.nodelist[0], ExtendsNode)):
-        node = template.nodelist[0]
-        parent_name = node.parent_name.resolve({})
-        if parent_name == expected_parent_name:
-            return True
-        else:
-            return template_extends(parent_name, expected_parent_name)
-    else:
-        return False
 
 
 def dynamic_admin_factory(admin_cls):

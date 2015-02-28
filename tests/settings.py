@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import django
+
 DEBUG = True
 
 SECRET_KEY = 'not-anymore'
@@ -30,5 +32,8 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
+
+if django.VERSION >= (1, 7):
+    MIDDLEWARE_CLASSES.append('django.contrib.auth.middleware.SessionAuthenticationMiddleware')
 
 ROOT_URLCONF = 'tests.urls'

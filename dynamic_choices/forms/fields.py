@@ -17,11 +17,8 @@ class GroupedModelChoiceIterator(ModelChoiceIterator):
         if self.field.empty_label is not None:
             yield (u"", self.field.empty_label)
 
-        # TODO: consider field.cache_choices
-
-        for group in self.groups:
-            label, qs = group
-            yield (label, [self.choice(obj) for obj in qs])
+        for label, queryset in self.groups:
+            yield (label, [self.choice(obj) for obj in queryset])
 
     def __len__(self):
         return sum(len(group[1]) for group in self.groups)

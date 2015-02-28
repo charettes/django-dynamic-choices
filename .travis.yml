@@ -22,7 +22,6 @@ matrix:
     - python: 3.4
       env: DJANGO=1.6
   allow_failures:
-    - env: DJANGO=1.8
     - env: DJANGO=master
 
 install:

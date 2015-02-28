@@ -1,6 +1,10 @@
 from __future__ import unicode_literals
 
+import os
+
 import django
+
+MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
 
@@ -15,6 +19,22 @@ DATABASES = {
 }
 
 SITE_ID = 1
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(MODULE_PATH, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
 
 INSTALLED_APPS = [
     'django.contrib.auth',

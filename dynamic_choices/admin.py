@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import json
 from functools import update_wrapper
 
+import django
 from django.conf.urls import url
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -191,7 +192,7 @@ def dynamic_admin_factory(admin_cls):
                     add_fields(fields, id(field_name), [id(field) for field in rels[rel] if field in form.fields])
 
             inlines = {}
-            for formset in self.get_formsets(request):
+            for formset, _inline in self.get_formsets_with_inlines(request):
                 inline = {}
                 formset_form = formset.form()
                 inline_rels = formset_form.get_dynamic_relationships()
@@ -234,7 +235,7 @@ def dynamic_admin_factory(admin_cls):
             form = self.get_form(request)(request.GET, instance=obj)
             data = get_dynamic_choices_from_form(form)
 
-            for formset in self.get_formsets(request, obj):
+            for formset, _inline in self.get_formsets_with_inlines(request, obj):
                 prefix = formset.get_default_prefix()
                 try:
                     fs = formset(request.GET, instance=obj)
@@ -252,9 +253,22 @@ def dynamic_admin_factory(admin_cls):
 
             return HttpResponse(lazy_encoder.encode(data), content_type='application/json')
 
-        # Make sure to pass request data to fieldsets
-        # so they can use it to define choices
-        def get_formsets(self, request, obj=None):
+        if django.VERSION >= (1, 7):
+            _get_formsets_with_inlines = admin_cls.get_formsets_with_inlines
+        else:
+            def _get_formsets_with_inlines(self, request, obj=None):
+                formsets = super(cls, self).get_formsets(request, obj)
+                inlines = self.get_inline_instances(request, obj)
+                for formset, inline in zip(formsets, inlines):
+                    yield formset, inline
+
+            def get_formsets(self, request, obj=None):
+                for formset, _inline in self.get_formsets_with_inlines(request, obj):
+                    yield formset
+
+        def get_formsets_with_inlines(self, request, obj=None):
+            # Make sure to pass request data to fieldsets
+            # so they can use it to define choices
             initial = {}
             model = self.model
             opts = model._meta
@@ -277,8 +291,7 @@ def dynamic_admin_factory(admin_cls):
                     else:
                         initial[k] = v
 
-            inline_instances = self.get_inline_instances(request)
-            for formset, inline in zip(super(cls, self).get_formsets(request, obj), inline_instances):
+            for formset, inline in self._get_formsets_with_inlines(request, obj):
                 fk = _get_foreign_key(self.model, inline.model, fk_name=inline.fk_name).name
                 fk_initial = dict(('%s__%s' % (fk, k), v) for k, v in initial.items())
                 # If we must provide additional data
@@ -287,7 +300,7 @@ def dynamic_admin_factory(admin_cls):
                 # and not provided to subclasses by BaseInlineFormSet.__init__
                 if len(initial):
                     formset = dynamic_formset_factory(formset, fk_initial)
-                yield formset
+                yield formset, inline
 
         def add_view(self, request, form_url='', extra_context=None):
             context = {'dynamic_choices_binder': self.get_dynamic_choices_binder(request)}

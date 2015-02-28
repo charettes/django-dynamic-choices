@@ -40,14 +40,14 @@ class DynamicChoicesField(object):
 
     def __validate_definition(self, *args, **kwargs):
         def error(message):
-            raise FieldError("%s: %s: %s" % (self.related.model._meta, self.name, message))
+            raise FieldError("%s: %s: %s" % (self.model._meta, self.name, message))
 
         original_choices_callback = self._choices_callback
 
         # The choices we're defined by a string
         # therefore it should be a cls method
         if isinstance(self._choices_callback, six.string_types):
-            callback = getattr(self.related.model, self._choices_callback, None)
+            callback = getattr(self.model, self._choices_callback, None)
             if not callable(callback):
                 error('Cannot find method specified by choices.')
             args_length = 2  # Since the callback is a method we must emulate the 'self'
@@ -75,7 +75,7 @@ class DynamicChoicesField(object):
         # We make sure field descriptors are valid
         for descriptor in self._choices_relationships:
             lookups = descriptor.split(LOOKUP_SEP)
-            meta = self.related.model._meta
+            meta = self.model._meta
             depth = len(lookups)
             step = 1
             fields = []

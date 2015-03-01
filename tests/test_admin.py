@@ -133,7 +133,7 @@ class DynamicAdminFormTests(AdminTestBase):
             'master': 1,
             'friends': [1],
             'enemy_set-TOTAL_FORMS': 3,
-            'enemy_set-INITIAL_FORMS': 0
+            'enemy_set-INITIAL_FORMS': 0,
         }
         response = self.client.post('/admin/dynamic_choices/puppet/add/', data)
         self.assertEqual(302, response.status_code, 'Failed to validate')
@@ -146,17 +146,31 @@ class DynamicAdminFormTests(AdminTestBase):
             'alignment': alignment,
             'master': 1,
             'friends': [1],
-            'enemy_set-TOTAL_FORMS': 3,
+            'enemy_set-TOTAL_FORMS': 2,
             'enemy_set-INITIAL_FORMS': 0,
-            'enemy_set-0-enemy': 2
+            'enemy_set-0-enemy': 2,
         }
         response = self.client.post('/admin/dynamic_choices/puppet/add/', data)
         self.assertNotEqual(302, response.status_code, 'Empty inline should not validate')
-        self.assertChoices(Master.objects.filter(alignment=Puppet.objects.get(id=2).alignment),
-                           response.context['inline_admin_formsets'][0].formset.forms[0].fields['because_of'],
-                           'Since enemy is specified because_of choices must have the same alignment')
-        self.assertEmptyChoices(response.context['inline_admin_formsets'][0].formset.forms[1].fields['because_of'],
-                                'Enemy is only specified for the first inline, second one because_of should be empty')
+        self.assertChoices(
+            Master.objects.filter(alignment=Puppet.objects.get(id=2).alignment),
+            response.context['inline_admin_formsets'][0].formset.forms[0].fields['because_of'],
+            'Since enemy is specified because_of choices must have the same alignment'
+        )
+        self.assertChoices(
+            Puppet.objects.exclude(alignment=ALIGNMENT_GOOD),
+            response.context['inline_admin_formsets'][0].formset.forms[0].fields['enemy'],
+            'Since puppet alignment is specified only non-good puppets should be allowed to be enemies'
+        )
+        self.assertEmptyChoices(
+            response.context['inline_admin_formsets'][0].formset.forms[1].fields['because_of'],
+            'Enemy is only specified for the first inline, second one because_of should be empty'
+        )
+        self.assertChoices(
+            Puppet.objects.exclude(alignment=ALIGNMENT_GOOD),
+            response.context['inline_admin_formsets'][0].formset.forms[1].fields['enemy'],
+            'Since puppet alignment is specified only non-good puppets should be allowed to be enemies'
+        )
 
     # TODO: Add test_(GET & POST)_edit testcases
 

@@ -6,7 +6,7 @@ from django.test import SimpleTestCase, TestCase
 
 from dynamic_choices.db.models import DynamicChoicesForeignKey
 
-from .models import ALIGNMENT_EVIL, ALIGNMENT_GOOD, Master, Puppet
+from .models import ALIGNMENT_EVIL, ALIGNMENT_GOOD, Enemy, Master, Puppet
 
 
 class DefinitionValidationTest(SimpleTestCase):
@@ -27,14 +27,19 @@ class DefinitionValidationTest(SimpleTestCase):
 
 
 class DynamicForeignKeyTests(TestCase):
-    fixtures = ['dynamic_choices_test_data']
-
     def setUp(self):
-        self.good_master = Master.objects.get(alignment=ALIGNMENT_GOOD)
+        self.good_master = Master.objects.create(alignment=ALIGNMENT_GOOD)
+        self.evil_master = Master.objects.create(alignment=ALIGNMENT_EVIL)
 
     def test_valid_value(self):
-        puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_GOOD)
-        puppet.full_clean()
+        good_puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_GOOD)
+        good_puppet.full_clean()
+        good_puppet.save()
+        evil_puppet = Puppet(master=self.evil_master, alignment=ALIGNMENT_EVIL)
+        evil_puppet.full_clean()
+        evil_puppet.save()
+        enemy = Enemy(puppet=evil_puppet, enemy=good_puppet, because_of=self.good_master)
+        enemy.full_clean(exclude=['since'])
 
     def test_invalid_value(self):
         puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_EVIL)

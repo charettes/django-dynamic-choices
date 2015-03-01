@@ -212,7 +212,7 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
 
     def validate(self, value, model_instance):
         if self.has_choices_callback:
-            if self.rel.parent_link or value is None:
+            if value is None:
                 return
 
             data = model_to_dict(model_instance)
@@ -243,7 +243,7 @@ class DynamicChoicesForeignKeyMixin(DynamicChoicesField):
                     'pk': value,  # included for backwards compatibility
                 })
         else:
-            super(DynamicChoicesForeignKey, self).validate(value, model_instance)
+            super(DynamicChoicesForeignKeyMixin, self).validate(value, model_instance)
 
 
 class DynamicChoicesForeignKey(DynamicChoicesForeignKeyMixin, ForeignKey):

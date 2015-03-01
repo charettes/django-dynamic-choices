@@ -82,7 +82,7 @@ class Puppet(models.Model):
 
 class Enemy(models.Model):
     puppet = DynamicChoicesForeignKey(Puppet)
-    enemy = DynamicChoicesForeignKey(Puppet, choices='choices_for_enemy', related_name='bob')
+    enemy = DynamicChoicesForeignKey(Puppet, choices='choices_for_enemy', related_name='+')
     because_of = DynamicChoicesForeignKey(Master, choices='choices_for_because_of', related_name='becauses_of')
     since = models.DateField()
 

@@ -158,11 +158,12 @@ class DynamicChoicesField(object):
                             elif isinstance(value, list):
                                 value = value[0]  # Make sure we've got a scalar
                             if isinstance(field, ForeignKey):
-                                if not isinstance(value, Model):
+                                if value is None:
+                                    break
+                                elif not isinstance(value, Model):
                                     try:
                                         value = field.rel.to.objects.get(pk=value)
                                     except Exception:
-                                        # Invalid object
                                         break
                                 lookup_data = model_to_dict(value)
                                 field_name = "%s"
@@ -178,7 +179,7 @@ class DynamicChoicesField(object):
                 # Attempt to cast value, if failed we don't assign since it's invalid
                 try:
                     values[descriptor] = field.to_python(value)
-                except:
+                except Exception:
                     pass
 
         return self._choices_callback(*args, **values)

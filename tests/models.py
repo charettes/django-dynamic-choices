@@ -14,11 +14,11 @@ ALIGNMENT_EVIL = 0
 ALIGNMENT_GOOD = 1
 ALIGNMENT_NEUTRAL = 2
 
-ALIGNMENTS = (
-    (ALIGNMENT_EVIL, 'Evil'),
-    (ALIGNMENT_GOOD, 'Good'),
-    (ALIGNMENT_NEUTRAL, 'Neutral'),
-)
+ALIGNMENT_CHOICES = [
+    (ALIGNMENT_EVIL, _('Evil')),
+    (ALIGNMENT_GOOD, _('Good')),
+    (ALIGNMENT_NEUTRAL, _('Neutral')),
+]
 
 
 def same_alignment(queryset, alignment=None):
@@ -26,13 +26,14 @@ def same_alignment(queryset, alignment=None):
 
 
 def alignment_display(alignment):
-    field = Puppet._meta.get_field('alignment')
-    return force_text(dict(field.flatchoices).get(int(alignment), alignment), strings_only=True)
+    for align, label in ALIGNMENT_CHOICES:
+        if alignment == align:
+            return force_text(label)
 
 
 @python_2_unicode_compatible
 class Master(models.Model):
-    alignment = models.SmallIntegerField(choices=ALIGNMENTS)
+    alignment = models.SmallIntegerField(choices=ALIGNMENT_CHOICES)
 
     class Meta:
         app_label = 'dynamic_choices'
@@ -43,11 +44,11 @@ class Master(models.Model):
 
 @python_2_unicode_compatible
 class Puppet(models.Model):
-    alignment = models.SmallIntegerField(choices=ALIGNMENTS)
+    alignment = models.SmallIntegerField(choices=ALIGNMENT_CHOICES)
     master = DynamicChoicesForeignKey(Master, choices=same_alignment)
-    secret_lover = DynamicChoicesOneToOneField('self', choices='choices_for_secret_lover',
-                                               related_name='secretly_loves_me',
-                                               blank=True, null=True)
+    secret_lover = DynamicChoicesOneToOneField(
+        'self', choices='choices_for_secret_lover', related_name='secretly_loves_me', blank=True, null=True
+    )
     friends = DynamicChoicesManyToManyField('self', choices='choices_for_friends', blank=True, null=True)
     enemies = DynamicChoicesManyToManyField('self', through='Enemy', symmetrical=False, blank=True, null=True)
 
@@ -58,17 +59,14 @@ class Puppet(models.Model):
         return "%s puppet (%s)" % (self.get_alignment_display(), self.pk)
 
     def choices_for_friends(self, queryset, id=None, alignment=None):
-        """
-            Make sure our friends share our alignment or are neutral
-        """
+        """Make sure our friends share our alignment or are neutral"""
         same_alignment = queryset.filter(alignment=alignment).exclude(id=id)
         if alignment in (None, ALIGNMENT_NEUTRAL):
             return same_alignment
-        else:
-            return (
-                (alignment_display(alignment), same_alignment),
-                ('Neutral', queryset.filter(alignment=ALIGNMENT_NEUTRAL))
-            )
+        return (
+            (alignment_display(alignment), same_alignment),
+            ('Neutral', queryset.filter(alignment=ALIGNMENT_NEUTRAL))
+        )
 
     def choices_for_secret_lover(self, queryset):
         if self.pk:
@@ -97,8 +95,7 @@ class Enemy(models.Model):
     def choices_for_enemy(self, queryset, puppet__alignment=None):
         if puppet__alignment is None:
             return queryset.none()
-        else:
-            return [
-                (_(label), queryset.filter(alignment=alignment))
-                for alignment, label in ALIGNMENTS if alignment != puppet__alignment
-            ]
+        return [
+            (label, queryset.filter(alignment=alignment))
+            for alignment, label in ALIGNMENT_CHOICES if alignment != puppet__alignment
+        ]

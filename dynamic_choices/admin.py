@@ -127,9 +127,11 @@ def dynamic_admin_factory(admin_cls):
                                ('change_form_template', change_form_template)]:
                 if t in attrs:
                     if not template_extends(attrs[t], change_form_template):
-                        raise ImproperlyConfigured("Make sure specified %s.%s='%s' template extends '%s' "
-                                                   "in order to enable DynamicAdmin" % (name, t, attrs[t],
-                                                                                        change_form_template))
+                        raise ImproperlyConfigured(
+                            "Make sure %s.%s template extends '%s' in order to enable DynamicAdmin" % (
+                                name, t, change_form_template
+                            )
+                        )
                 else:
                     attrs[t] = default
 

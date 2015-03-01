@@ -3,68 +3,22 @@ from __future__ import unicode_literals
 import json
 import os
 
-from django.core.exceptions import (
-    FieldError, ImproperlyConfigured, ValidationError,
-)
-from django.db.models import Model
+from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, TestCase
 from django.test.client import Client
 from django.test.utils import override_settings
 from django.utils.encoding import force_text
 
 from dynamic_choices.admin import DynamicAdmin
-from dynamic_choices.db.models import DynamicChoicesForeignKey
 from dynamic_choices.forms import DynamicModelForm
 from dynamic_choices.forms.fields import (
     DynamicModelChoiceField, DynamicModelMultipleChoiceField,
 )
 
 from .admin import PuppetAdmin
-from .models import ALIGNMENT_EVIL, ALIGNMENT_GOOD, Master, Puppet
+from .models import ALIGNMENT_GOOD, Master, Puppet
 
 MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
-
-
-class DynamicForeignKeyTest(TestCase):
-    fixtures = ('dynamic_choices_test_data',)
-
-    def setUp(self):
-        self.good_master = Master.objects.get(alignment=ALIGNMENT_GOOD)
-
-    def test_valid_value(self):
-        puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_GOOD)
-        puppet.full_clean()
-
-    def test_invalid_value(self):
-        puppet = Puppet(master=self.good_master, alignment=ALIGNMENT_EVIL)
-        self.assertRaises(ValidationError, puppet.full_clean)
-
-
-class DynamicOneToOneField(TestCase):
-    fixtures = ('dynamic_choices_test_data',)
-
-    def setUp(self):
-        self.good_puppet = Puppet.objects.get(alignment=ALIGNMENT_GOOD)
-        self.evil_puppet = Puppet.objects.get(alignment=ALIGNMENT_EVIL)
-
-    def test_valid_value(self):
-        self.evil_puppet.secret_lover = self.good_puppet
-        self.evil_puppet.full_clean()
-        self.evil_puppet.save()
-        self.assertEqual(self.good_puppet.secretly_loves_me,
-                         self.evil_puppet)
-        self.good_puppet.secret_lover = self.evil_puppet
-        self.good_puppet.full_clean()
-
-    def test_invalid_value(self):
-        self.evil_puppet.secret_lover = self.good_puppet
-        self.evil_puppet.save()
-        # narcissus style
-        self.good_puppet.secret_lover = self.good_puppet
-        self.assertRaises(
-            ValidationError, self.good_puppet.full_clean,
-            "Since the evil puppet secretly loves the good puppet the good puppet can only secretly love the bad one."
-        )
 
 
 @override_settings(
@@ -74,39 +28,43 @@ class DynamicOneToOneField(TestCase):
     ],
     TEMPLATE_DIRS=[os.path.join(MODULE_PATH, 'templates')],
 )
-class AdminConfigurationTests(SimpleTestCase):
+class ChangeFormTemplateTests(SimpleTestCase):
+    template_attr = 'change_form_template'
+
     def test_doesnt_extend_change_form(self):
         expected_message = (
-            "Make sure specified "
-            "ChangeFormDoNotExtends.change_form_template='dynamic_choices_tests/do_not_extends_change_form.html' "
-            "template extends 'admin/dynamic_choices/change_form.html' in order to enable DynamicAdmin"
-        )
+            "Make sure DoesntExtend.%s template extends "
+            "'admin/dynamic_choices/change_form.html' in order to enable DynamicAdmin"
+        ) % self.template_attr
         with self.assertRaisesMessage(ImproperlyConfigured, expected_message):
-            class ChangeFormDoNotExtends(DynamicAdmin):
-                change_form_template = 'dynamic_choices_tests/do_not_extends_change_form.html'
+            type(str('DoesntExtend'), (DynamicAdmin,), {
+                self.template_attr: 'dynamic_choices_tests/do_not_extends_change_form.html'
+            })
 
-    def test_change_form_extends(self):
-        """Overriding the `change_form_template` on a `DynamicAdmin` subclass should work when the specified
-        template extends the dynamic choices one."""
-        class ChangeFormExtends(DynamicAdmin):
-            change_form_template = 'dynamic_choices_tests/extends_change_form.html'
+    def test_extends_directly(self):
+        type(str('ExtendsDirectly'), (DynamicAdmin,), {
+            self.template_attr: 'dynamic_choices_tests/extends_change_form.html'
+        })
 
-    def test_change_form_extends_child(self):
-        """Overriding the `change_form_template` on a `DynamicAdmin` subclass should work when the specified
-        template extends the dynamic choices one."""
-        class ChangeFormExtends(DynamicAdmin):
-            change_form_template = 'dynamic_choices_tests/extends_change_form_twice.html'
+    def test_extends_change_from_through_child(self):
+        type(str('ExtendsThroughChild'), (DynamicAdmin,), {
+            self.template_attr: 'dynamic_choices_tests/extends_change_form_twice.html'
+        })
 
 
-class AdminTest(TestCase):
-    fixtures = ('dynamic_choices_test_data', 'dynamic_choices_admin_test_data')
+class AddFormTemplateTests(ChangeFormTemplateTests):
+    template_attr = 'add_form_template'
+
+
+class AdminTestBase(TestCase):
+    fixtures = ['dynamic_choices_test_data', 'dynamic_choices_admin_test_data']
 
     def setUp(self):
         self.client = Client()
         self.client.login(username='superuser', password='sudo')
 
 
-class DynamicAdminFormTest(AdminTest):
+class DynamicAdminFormTests(AdminTestBase):
 
     def assertChoices(self, queryset, field, msg=None):
         self.assertEqual(list(queryset), list(field.widget.choices.queryset), msg)
@@ -211,7 +169,7 @@ class DynamicAdminFormTest(AdminTest):
         )
 
 
-class AdminChoicesTest(AdminTest):
+class AdminChoicesTests(AdminTestBase):
 
     def _get_choices(self, data=None):
         default = {
@@ -262,23 +220,3 @@ class AdminChoicesTest(AdminTest):
             ['Evil', [[2, 'Evil puppet (2)'], ]],
             ['Neutral', []],
         ])
-
-
-class DefinitionValidationTest(TestCase):
-
-    def test_method_definition(self):
-        with self.assertRaises(FieldError):
-            class MissingChoicesCallbackModel(Model):
-                field = DynamicChoicesForeignKey('self', choices='missing_method')
-
-                class Meta:
-                    app_label = 'dynamic_choices'
-        try:
-            class CallableChoicesCallbackModel(Model):
-                field = DynamicChoicesForeignKey('self', choices=lambda qs: qs)
-
-                class Meta:
-                    app_label = 'dynamic_choices'
-
-        except FieldError:
-            self.fail('Defining a callable choices should work')

@@ -260,9 +260,3 @@ class DynamicChoicesOneToOneField(DynamicChoicesForeignKeyMixin, OneToOneField):
 class DynamicChoicesManyToManyField(DynamicChoicesField, ManyToManyField):
 
     form_class = DynamicModelMultipleChoiceField
-
-try:
-    from south.modelsinspector import add_introspection_rules
-    add_introspection_rules([], ['^dynamic_choices\.db\.models'])
-except ImportError:
-    pass

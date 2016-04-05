@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from itertools import chain
 
-import django
 from django.db.models.query import EmptyQuerySet, QuerySet
 
 
@@ -62,17 +61,10 @@ class DynamicChoicesQuerySet(QuerySet):
         clone._field = self._field
         return clone
 
-    if django.VERSION >= (1, 6):
-        def filter_for_instance(self, instance, data):
-            if self.query.is_empty():
-                return self
-            return self._field._invoke_choices_callback(instance, self, data)
-    else:
-        def filter_for_instance(self, instance, data):
-            return self._field._invoke_choices_callback(instance, self, data)
-
-        def none(self):
-            return self._clone(klass=EmptyDynamicChoicesQuerySet)
+    def filter_for_instance(self, instance, data):
+        if self.query.is_empty():
+            return self
+        return self._field._invoke_choices_callback(instance, self, data)
 
 
 def dynamic_queryset_factory(queryset, field):

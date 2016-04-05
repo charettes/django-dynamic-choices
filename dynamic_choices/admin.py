@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import json
 from functools import update_wrapper
 
-import django
 from django.conf.urls import url
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -255,19 +254,6 @@ def dynamic_admin_factory(admin_cls):
 
             return HttpResponse(lazy_encoder.encode(data), content_type='application/json')
 
-        if django.VERSION >= (1, 7):
-            _get_formsets_with_inlines = admin_cls.get_formsets_with_inlines
-        else:
-            def _get_formsets_with_inlines(self, request, obj=None):
-                formsets = super(cls, self).get_formsets(request, obj)
-                inlines = self.get_inline_instances(request, obj)
-                for formset, inline in zip(formsets, inlines):
-                    yield formset, inline
-
-            def get_formsets(self, request, obj=None):
-                for formset, _inline in self.get_formsets_with_inlines(request, obj):
-                    yield formset
-
         def get_formsets_with_inlines(self, request, obj=None):
             # Make sure to pass request data to fieldsets
             # so they can use it to define choices
@@ -293,7 +279,7 @@ def dynamic_admin_factory(admin_cls):
                     else:
                         initial[k] = v
 
-            for formset, inline in self._get_formsets_with_inlines(request, obj):
+            for formset, inline in super(cls, self).get_formsets_with_inlines(request, obj):
                 fk = _get_foreign_key(self.model, inline.model, fk_name=inline.fk_name).name
                 fk_initial = dict(('%s__%s' % (fk, k), v) for k, v in initial.items())
                 # If we must provide additional data

@@ -2,8 +2,6 @@ from __future__ import unicode_literals
 
 import os
 
-import django
-
 MODULE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
@@ -52,9 +50,7 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware'
 ]
-
-if django.VERSION >= (1, 7):
-    MIDDLEWARE_CLASSES.append('django.contrib.auth.middleware.SessionAuthenticationMiddleware')
 
 ROOT_URLCONF = 'tests.urls'

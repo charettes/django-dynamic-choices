@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.admin',
     'dynamic_choices',
+    'tests',
 ]
 
 MIDDLEWARE_CLASSES = [
